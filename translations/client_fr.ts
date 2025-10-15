@@ -128,7 +128,7 @@
     <message>
         <location filename="../src/gui/cloudproviders/cloudproviderwrapper.cpp" line="234"/>
         <source>Open in browser</source>
-        <translation type="unfinished"/>
+        <translation>Ouvrir dans le navigateur</translation>
     </message>
     <message>
         <location filename="../src/gui/cloudproviders/cloudproviderwrapper.cpp" line="246"/>
@@ -652,7 +652,7 @@ Le compte doit-il être importé ?</translation>
     <message>
         <location filename="../src/gui/accountsettings.cpp" line="280"/>
         <source>End-to-end encryption has not been initialized on this account.</source>
-        <translation type="unfinished"/>
+        <translation>Le chiffrement de bout en bout n&apos;a pas été initialisé sur ce compte.</translation>
     </message>
     <message>
         <location filename="../src/gui/accountsettings.cpp" line="302"/>
@@ -1439,7 +1439,7 @@ Vous prenez vos propres risques.</translation>
     </message>
     <message>
         <location filename="../src/gui/caseclashfilenamedialog.ui" line="121"/>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="98"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="99"/>
         <source>Open existing file</source>
         <translation>Ouvrir un fichier existant</translation>
     </message>
@@ -1455,7 +1455,7 @@ Vous prenez vos propres risques.</translation>
     </message>
     <message>
         <location filename="../src/gui/caseclashfilenamedialog.ui" line="227"/>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="106"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="107"/>
         <source>Open clashing file</source>
         <translation>Ouvrir le fichier conflictuel</translation>
     </message>
@@ -1470,42 +1470,42 @@ Vous prenez vos propres risques.</translation>
         <translation>Nouveau nom de fichier</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="90"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="91"/>
         <source>Rename file</source>
         <translation>Renomer le fichier</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="92"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="93"/>
         <source>The file &quot;%1&quot; could not be synced because of a case clash conflict with an existing file on this system.</source>
         <translation>Le fichier &quot;%1&quot; n&apos;a pas pu être synchronisé à cause d&apos;un conflit de casse avec un fichier existant dans ce système.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="93"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="94"/>
         <source>%1 does not support equal file names with only letter casing differences.</source>
         <translation>%1 ne supporte pas les noms de fichiers identiques avec seulement des différences de casse de caractère.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="238"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="239"/>
         <source>Filename contains leading and trailing spaces.</source>
         <translation>Le nom de fichier contient des espaces de début et de fin.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="241"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="242"/>
         <source>Filename contains leading spaces.</source>
         <translation>Le nom de fichier contient des espaces de début.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="243"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="244"/>
         <source>Filename contains trailing spaces.</source>
         <translation>Le nom de fichier contient des espaces de fin.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="248"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="249"/>
         <source>Use invalid name</source>
         <translation>Nom invalide</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="273"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="274"/>
         <source>Filename contains illegal characters: %1</source>
         <translation>Le nom du fichier contient des caractères illégaux : %1</translation>
     </message>
@@ -1561,7 +1561,7 @@ Vous prenez vos propres risques.</translation>
     </message>
     <message>
         <location filename="../src/gui/conflictdialog.ui" line="20"/>
-        <location filename="../src/gui/conflictdialog.cpp" line="87"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="88"/>
         <source>Conflicting versions of %1.</source>
         <translation>Versions en conflit de %1.</translation>
     </message>
@@ -1609,33 +1609,33 @@ Vous prenez vos propres risques.</translation>
         <translation>&lt;a href=&quot;%1&quot;&gt;Ouvrir la version serveur&lt;/a&gt;</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="45"/>
-        <location filename="../src/gui/conflictdialog.cpp" line="170"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="46"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="171"/>
         <source>Keep selected version</source>
         <translation>Conserver la version sélectionnée</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="141"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="142"/>
         <source>Open local version</source>
         <translation>Ouvrir la version locale</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="149"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="150"/>
         <source>Open server version</source>
         <translation>Ouvrir la version serveur</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="167"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="168"/>
         <source>Keep both versions</source>
         <translation>Conserver les deux versions</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="168"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="169"/>
         <source>Keep local version</source>
         <translation>Conserver la version locale</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="169"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="170"/>
         <source>Keep server version</source>
         <translation>Conserver la version serveur</translation>
     </message>
@@ -4670,32 +4670,32 @@ Il s&apos;agit d&apos;un nouveau mode expérimental. Si vous décidez de l&apos;
 <context>
     <name>OCC::PropagateUploadFileNG</name>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="450"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="451"/>
         <source>The local file was removed during sync.</source>
         <translation>Fichier local supprimé pendant la synchronisation.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="465"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="466"/>
         <source>Local file changed during sync.</source>
         <translation>Fichier local modifié pendant la synchronisation.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="507"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="508"/>
         <source>Poll URL missing</source>
         <translation>URL du sondage manquante</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="516"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="517"/>
         <source>Unexpected return code from server (%1)</source>
         <translation>Le serveur a retourné un code inattendu (%1)</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="523"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="524"/>
         <source>Missing File ID from server</source>
         <translation>L&apos;identifiant de fichier est manquant sur le serveur</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="543"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="544"/>
         <source>Missing ETag from server</source>
         <translation>L&apos;information Etag de modification de fichier est manquante sur le serveur</translation>
     </message>
@@ -5704,12 +5704,12 @@ Le serveur a répondu avec l&apos;erreur : %2</translation>
     <message>
         <location filename="../src/gui/tray/usermodel.cpp" line="1645"/>
         <source>Leave share</source>
-        <translation type="unfinished"/>
+        <translation>Quitter le partage</translation>
     </message>
     <message>
         <location filename="../src/gui/tray/usermodel.cpp" line="1645"/>
         <source>Remove account</source>
-        <translation type="unfinished"/>
+        <translation>Supprimer le compte</translation>
     </message>
 </context>
 <context>
@@ -6448,9 +6448,14 @@ Le serveur a répondu avec l&apos;erreur : %2</translation>
         <translation>Vous n&apos;êtes pas autorisé à accéder à cette ressource. Si vous pensez qu&apos;il s&apos;agit d&apos;une erreur, contactez l&apos;administrateur de votre serveur pour obtenir de l&apos;aide.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/abstractnetworkjob.cpp" line="554"/>
+        <location filename="../src/libsync/abstractnetworkjob.cpp" line="549"/>
         <source>An unexpected error occurred. Please try syncing again or contact contact your server administrator if the issue continues.</source>
         <translation>Une erreur inattendue est survenue. Veuillez réessayer la synchronisation ou contacter l&apos;administrateur de votre serveur si le problème persiste.</translation>
+    </message>
+    <message>
+        <location filename="../src/libsync/abstractnetworkjob.cpp" line="554"/>
+        <source>An unexpected error occurred. Please try syncing again or contact your server administrator if the issue continues.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -6837,14 +6842,14 @@ Le serveur a répondu avec l&apos;erreur : %2</translation>
         <translation>Définir le statut</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserLine.qml" line="148"/>
-        <source>Status message</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <location filename="../src/gui/tray/UserLine.qml" line="168"/>
         <source>Remove account</source>
         <translation>Retirer le compte</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/UserLine.qml" line="148"/>
+        <source>Status message</source>
+        <translation>Message d&apos;état</translation>
     </message>
     <message>
         <location filename="../src/gui/tray/UserLine.qml" line="155"/>
@@ -6864,32 +6869,32 @@ Le serveur a répondu avec l&apos;erreur : %2</translation>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="40"/>
         <source>Status message</source>
-        <translation type="unfinished"/>
+        <translation>Message d&apos;état</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="116"/>
         <source>What is your status?</source>
-        <translation type="unfinished"/>
+        <translation>Quel est votre statut ?</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="168"/>
         <source>Clear status message after</source>
-        <translation type="unfinished"/>
+        <translation>Effacer le message d&apos;état après</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="205"/>
         <source>Cancel</source>
-        <translation type="unfinished"/>
+        <translation>Annuler</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="212"/>
         <source>Clear</source>
-        <translation type="unfinished"/>
+        <translation>Effacer</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="221"/>
         <source>Apply</source>
-        <translation type="unfinished"/>
+        <translation>Appliquer</translation>
     </message>
 </context>
 <context>
@@ -6897,42 +6902,42 @@ Le serveur a répondu avec l&apos;erreur : %2</translation>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="42"/>
         <source>Online status</source>
-        <translation type="unfinished"/>
+        <translation>Statut de connexion</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="51"/>
         <source>Online</source>
-        <translation type="unfinished"/>
+        <translation>En ligne</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="61"/>
         <source>Away</source>
-        <translation type="unfinished"/>
+        <translation>Absent</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="72"/>
         <source>Busy</source>
-        <translation type="unfinished"/>
+        <translation>Occupé</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="82"/>
         <source>Do not disturb</source>
-        <translation type="unfinished"/>
+        <translation>Ne pas déranger</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="83"/>
         <source>Mute all notifications</source>
-        <translation type="unfinished"/>
+        <translation>Désactiver toutes les notifications</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="94"/>
         <source>Invisible</source>
-        <translation type="unfinished"/>
+        <translation>invisible</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="95"/>
         <source>Appear offline</source>
-        <translation type="unfinished"/>
+        <translation>Apparaître hors ligne</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="106"/>

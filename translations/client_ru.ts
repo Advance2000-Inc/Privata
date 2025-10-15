@@ -1438,7 +1438,7 @@ This action will abort any currently running synchronization.</source>
     </message>
     <message>
         <location filename="../src/gui/caseclashfilenamedialog.ui" line="121"/>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="98"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="99"/>
         <source>Open existing file</source>
         <translation>Открыть существующий файл</translation>
     </message>
@@ -1454,7 +1454,7 @@ This action will abort any currently running synchronization.</source>
     </message>
     <message>
         <location filename="../src/gui/caseclashfilenamedialog.ui" line="227"/>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="106"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="107"/>
         <source>Open clashing file</source>
         <translation>Открыть конфликтующий файл</translation>
     </message>
@@ -1469,42 +1469,42 @@ This action will abort any currently running synchronization.</source>
         <translation>Новое имя файла</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="90"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="91"/>
         <source>Rename file</source>
         <translation>Переименовать файл</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="92"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="93"/>
         <source>The file &quot;%1&quot; could not be synced because of a case clash conflict with an existing file on this system.</source>
         <translation>Не удалось синхронизировать файл «%1», так как это действие приведёт к конфликту с уже существующим файлом.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="93"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="94"/>
         <source>%1 does not support equal file names with only letter casing differences.</source>
         <translation>%1 не поддерживает одинаковые имена файлов, отличающиеся только регистром букв.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="238"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="239"/>
         <source>Filename contains leading and trailing spaces.</source>
         <translation>Имя файла содержит начальные и конечные пробелы.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="241"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="242"/>
         <source>Filename contains leading spaces.</source>
         <translation>Имя файла содержит пробелы в начале.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="243"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="244"/>
         <source>Filename contains trailing spaces.</source>
         <translation>Имя файла содержит пробелы на конце.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="248"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="249"/>
         <source>Use invalid name</source>
         <translation>Использовать некорректное имя</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="273"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="274"/>
         <source>Filename contains illegal characters: %1</source>
         <translation>Имя файла содержит недопустимые символы: % 1</translation>
     </message>
@@ -1560,7 +1560,7 @@ This action will abort any currently running synchronization.</source>
     </message>
     <message>
         <location filename="../src/gui/conflictdialog.ui" line="20"/>
-        <location filename="../src/gui/conflictdialog.cpp" line="87"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="88"/>
         <source>Conflicting versions of %1.</source>
         <translation>Конфликт версий файла «%1».</translation>
     </message>
@@ -1608,33 +1608,33 @@ This action will abort any currently running synchronization.</source>
         <translation>&lt;a href=&quot;%1&quot;&gt;Открыть серверную версию&lt;/a&gt;</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="45"/>
-        <location filename="../src/gui/conflictdialog.cpp" line="170"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="46"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="171"/>
         <source>Keep selected version</source>
         <translation>Оставить выбранную версию</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="141"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="142"/>
         <source>Open local version</source>
         <translation>Открыть локальную версию</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="149"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="150"/>
         <source>Open server version</source>
         <translation>Открыть серверную версию</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="167"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="168"/>
         <source>Keep both versions</source>
         <translation>Оставить обе версии</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="168"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="169"/>
         <source>Keep local version</source>
         <translation>Оставить локальную версию</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="169"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="170"/>
         <source>Keep server version</source>
         <translation>Оставить версию сервера</translation>
     </message>
@@ -4662,32 +4662,32 @@ This is a new, experimental mode. If you decide to use it, please report any iss
 <context>
     <name>OCC::PropagateUploadFileNG</name>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="450"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="451"/>
         <source>The local file was removed during sync.</source>
         <translation>Локальный файл был удалён в процессе синхронизации.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="465"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="466"/>
         <source>Local file changed during sync.</source>
         <translation>Локальный файл изменился в процессе синхронизации.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="507"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="508"/>
         <source>Poll URL missing</source>
         <translation>Не хватает сформированного URL</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="516"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="517"/>
         <source>Unexpected return code from server (%1)</source>
         <translation>Неожиданный код завершения от сервера (%1)</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="523"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="524"/>
         <source>Missing File ID from server</source>
         <translation>Отсутствует ID файла на сервере</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="543"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="544"/>
         <source>Missing ETag from server</source>
         <translation>Отсутствует ETag с сервера</translation>
     </message>
@@ -6440,9 +6440,14 @@ Server replied with error: %2</source>
         <translation>У вас нет разрешения на доступ к этому ресурсу. Если вы считаете, что произошла ошибка, обратитесь за помощью к администратору сервера.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/abstractnetworkjob.cpp" line="554"/>
+        <location filename="../src/libsync/abstractnetworkjob.cpp" line="549"/>
         <source>An unexpected error occurred. Please try syncing again or contact contact your server administrator if the issue continues.</source>
         <translation>Произошла непредвиденная ошибка. Попробуйте выполнить синхронизацию ещё раз или обратитесь к администратору сервера, если проблема не исчезнет.</translation>
+    </message>
+    <message>
+        <location filename="../src/libsync/abstractnetworkjob.cpp" line="554"/>
+        <source>An unexpected error occurred. Please try syncing again or contact your server administrator if the issue continues.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -6829,14 +6834,14 @@ Server replied with error: %2</source>
         <translation>Установить статус</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserLine.qml" line="148"/>
-        <source>Status message</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <location filename="../src/gui/tray/UserLine.qml" line="168"/>
         <source>Remove account</source>
         <translation>Удалить учётную запись</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/UserLine.qml" line="148"/>
+        <source>Status message</source>
+        <translation type="unfinished"/>
     </message>
     <message>
         <location filename="../src/gui/tray/UserLine.qml" line="155"/>

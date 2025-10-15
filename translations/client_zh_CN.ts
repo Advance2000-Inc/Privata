@@ -1439,7 +1439,7 @@ This action will abort any currently running synchronization.</source>
     </message>
     <message>
         <location filename="../src/gui/caseclashfilenamedialog.ui" line="121"/>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="98"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="99"/>
         <source>Open existing file</source>
         <translation>打开现有文件</translation>
     </message>
@@ -1455,7 +1455,7 @@ This action will abort any currently running synchronization.</source>
     </message>
     <message>
         <location filename="../src/gui/caseclashfilenamedialog.ui" line="227"/>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="106"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="107"/>
         <source>Open clashing file</source>
         <translation>打开冲突文件</translation>
     </message>
@@ -1470,42 +1470,42 @@ This action will abort any currently running synchronization.</source>
         <translation>新文件名</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="90"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="91"/>
         <source>Rename file</source>
         <translation>重命名文件</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="92"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="93"/>
         <source>The file &quot;%1&quot; could not be synced because of a case clash conflict with an existing file on this system.</source>
         <translation>无法同步文件“%1”，因为其会与系统上存在的文件产生大小写冲突。</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="93"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="94"/>
         <source>%1 does not support equal file names with only letter casing differences.</source>
         <translation>%1 不支持仅字母大小写不同的文件名称。</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="238"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="239"/>
         <source>Filename contains leading and trailing spaces.</source>
         <translation>文件名包含前导和尾部空格。</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="241"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="242"/>
         <source>Filename contains leading spaces.</source>
         <translation>文件名包含前导空格。</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="243"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="244"/>
         <source>Filename contains trailing spaces.</source>
         <translation>文件名包含尾部空格。 </translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="248"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="249"/>
         <source>Use invalid name</source>
         <translation>使用无效的名称。</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="273"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="274"/>
         <source>Filename contains illegal characters: %1</source>
         <translation>文件名含有非法字符：%1</translation>
     </message>
@@ -1561,7 +1561,7 @@ This action will abort any currently running synchronization.</source>
     </message>
     <message>
         <location filename="../src/gui/conflictdialog.ui" line="20"/>
-        <location filename="../src/gui/conflictdialog.cpp" line="87"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="88"/>
         <source>Conflicting versions of %1.</source>
         <translation>％1 的版本冲突。</translation>
     </message>
@@ -1609,33 +1609,33 @@ This action will abort any currently running synchronization.</source>
         <translation>&lt;a href=&quot;%1&quot;&gt;打开服务器版本&lt;/a&gt;</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="45"/>
-        <location filename="../src/gui/conflictdialog.cpp" line="170"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="46"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="171"/>
         <source>Keep selected version</source>
         <translation>保留所选版本</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="141"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="142"/>
         <source>Open local version</source>
         <translation>打开本地版本</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="149"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="150"/>
         <source>Open server version</source>
         <translation>打开服务器版本</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="167"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="168"/>
         <source>Keep both versions</source>
         <translation>保留两个版本</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="168"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="169"/>
         <source>Keep local version</source>
         <translation>保留本地版本</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="169"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="170"/>
         <source>Keep server version</source>
         <translation>保留服务器版本</translation>
     </message>
@@ -4662,32 +4662,32 @@ This is a new, experimental mode. If you decide to use it, please report any iss
 <context>
     <name>OCC::PropagateUploadFileNG</name>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="450"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="451"/>
         <source>The local file was removed during sync.</source>
         <translation>本地文件在同步时已删除。</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="465"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="466"/>
         <source>Local file changed during sync.</source>
         <translation>本地文件在同步时已修改。</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="507"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="508"/>
         <source>Poll URL missing</source>
         <translation>缺少轮询 URL</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="516"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="517"/>
         <source>Unexpected return code from server (%1)</source>
         <translation>从服务器得到了意外的返回值（%1）</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="523"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="524"/>
         <source>Missing File ID from server</source>
         <translation>服务端文件 ID 缺失</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="543"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="544"/>
         <source>Missing ETag from server</source>
         <translation>服务端 ETag 缺失</translation>
     </message>
@@ -6440,9 +6440,14 @@ Server replied with error: %2</source>
         <translation>您没有访问此资源的权限。如果您认为这是错误，请联系您的服务器管理员以获取帮助。</translation>
     </message>
     <message>
-        <location filename="../src/libsync/abstractnetworkjob.cpp" line="554"/>
+        <location filename="../src/libsync/abstractnetworkjob.cpp" line="549"/>
         <source>An unexpected error occurred. Please try syncing again or contact contact your server administrator if the issue continues.</source>
         <translation>发生意外错误。请再次尝试同步，如果问题仍然存在，请联系您的服务器管理员。</translation>
+    </message>
+    <message>
+        <location filename="../src/libsync/abstractnetworkjob.cpp" line="554"/>
+        <source>An unexpected error occurred. Please try syncing again or contact your server administrator if the issue continues.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -6829,14 +6834,14 @@ Server replied with error: %2</source>
         <translation>设置状态</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserLine.qml" line="148"/>
-        <source>Status message</source>
-        <translation>状态消息</translation>
-    </message>
-    <message>
         <location filename="../src/gui/tray/UserLine.qml" line="168"/>
         <source>Remove account</source>
         <translation>移除账号</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/UserLine.qml" line="148"/>
+        <source>Status message</source>
+        <translation>状态消息</translation>
     </message>
     <message>
         <location filename="../src/gui/tray/UserLine.qml" line="155"/>

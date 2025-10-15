@@ -1442,7 +1442,7 @@ Současně tato akce zruší jakoukoli právě probíhající synchronizaci.</tr
     </message>
     <message>
         <location filename="../src/gui/caseclashfilenamedialog.ui" line="121"/>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="98"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="99"/>
         <source>Open existing file</source>
         <translation>Otevřít existující soubor</translation>
     </message>
@@ -1458,7 +1458,7 @@ Současně tato akce zruší jakoukoli právě probíhající synchronizaci.</tr
     </message>
     <message>
         <location filename="../src/gui/caseclashfilenamedialog.ui" line="227"/>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="106"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="107"/>
         <source>Open clashing file</source>
         <translation>Otevřít soubor vyvolávající kolizi stejných názvů lišících se jen velikostí písmen</translation>
     </message>
@@ -1473,42 +1473,42 @@ Současně tato akce zruší jakoukoli právě probíhající synchronizaci.</tr
         <translation>Nový název souboru</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="90"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="91"/>
         <source>Rename file</source>
         <translation>Přejmenovat soubor</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="92"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="93"/>
         <source>The file &quot;%1&quot; could not be synced because of a case clash conflict with an existing file on this system.</source>
         <translation>Soubor „%1“ nebylo možné synchronizovat kvůli kolizi stejných názvů lišících se jen velikostí písmen s existujícím souborem na tomto stroji.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="93"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="94"/>
         <source>%1 does not support equal file names with only letter casing differences.</source>
         <translation>%1 nepodporuje stejné názvy souborů lišící se pouze velikostí písmen.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="238"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="239"/>
         <source>Filename contains leading and trailing spaces.</source>
         <translation>Název souboru obsahuje mezery na začátku a konci.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="241"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="242"/>
         <source>Filename contains leading spaces.</source>
         <translation>Název souboru obsahuje mezery na začátku.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="243"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="244"/>
         <source>Filename contains trailing spaces.</source>
         <translation>Název souboru obsahuje mezery na konci.</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="248"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="249"/>
         <source>Use invalid name</source>
         <translation>Použít neplatný název</translation>
     </message>
     <message>
-        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="273"/>
+        <location filename="../src/gui/caseclashfilenamedialog.cpp" line="274"/>
         <source>Filename contains illegal characters: %1</source>
         <translation>Název souboru obsahuje neplatné znaky: %1</translation>
     </message>
@@ -1564,7 +1564,7 @@ Současně tato akce zruší jakoukoli právě probíhající synchronizaci.</tr
     </message>
     <message>
         <location filename="../src/gui/conflictdialog.ui" line="20"/>
-        <location filename="../src/gui/conflictdialog.cpp" line="87"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="88"/>
         <source>Conflicting versions of %1.</source>
         <translation>Kolidující verze %1.</translation>
     </message>
@@ -1612,33 +1612,33 @@ Současně tato akce zruší jakoukoli právě probíhající synchronizaci.</tr
         <translation>&lt;a href=&quot;%1&quot;&gt;Otevřít verzi ze serveru&lt;/a&gt;</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="45"/>
-        <location filename="../src/gui/conflictdialog.cpp" line="170"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="46"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="171"/>
         <source>Keep selected version</source>
         <translation>Ponechat označenou verzi</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="141"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="142"/>
         <source>Open local version</source>
         <translation>Otevřít místní verzi</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="149"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="150"/>
         <source>Open server version</source>
         <translation>Otevřít verzi ze serveru</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="167"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="168"/>
         <source>Keep both versions</source>
         <translation>Ponechat obě verze</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="168"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="169"/>
         <source>Keep local version</source>
         <translation>Ponechat místní verzi</translation>
     </message>
     <message>
-        <location filename="../src/gui/conflictdialog.cpp" line="169"/>
+        <location filename="../src/gui/conflictdialog.cpp" line="170"/>
         <source>Keep server version</source>
         <translation>Ponechat verzi ze serveru</translation>
     </message>
@@ -4672,32 +4672,32 @@ Toto je nový, experimentální režim. Pokud se jej rozhodnete používat, pros
 <context>
     <name>OCC::PropagateUploadFileNG</name>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="450"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="451"/>
         <source>The local file was removed during sync.</source>
         <translation>Místní soubor byl odstraněn během synchronizace.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="465"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="466"/>
         <source>Local file changed during sync.</source>
         <translation>Místní soubor byl změněn během synchronizace.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="507"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="508"/>
         <source>Poll URL missing</source>
         <translation>Chybí adresa URL</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="516"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="517"/>
         <source>Unexpected return code from server (%1)</source>
         <translation>Neočekávaný návratový kód ze serveru (%1)</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="523"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="524"/>
         <source>Missing File ID from server</source>
         <translation>Chybějící identifikátor souboru ze serveru</translation>
     </message>
     <message>
-        <location filename="../src/libsync/propagateuploadng.cpp" line="543"/>
+        <location filename="../src/libsync/propagateuploadng.cpp" line="544"/>
         <source>Missing ETag from server</source>
         <translation>Chybějící ETag ze serveru</translation>
     </message>
@@ -5706,12 +5706,12 @@ Server odpověděl chybou: %2</translation>
     <message>
         <location filename="../src/gui/tray/usermodel.cpp" line="1645"/>
         <source>Leave share</source>
-        <translation type="unfinished"/>
+        <translation>Opustit sdílení</translation>
     </message>
     <message>
         <location filename="../src/gui/tray/usermodel.cpp" line="1645"/>
         <source>Remove account</source>
-        <translation type="unfinished"/>
+        <translation>Odebrat účet</translation>
     </message>
 </context>
 <context>
@@ -6450,9 +6450,14 @@ Server odpověděl chybou: %2</translation>
         <translation>Nemáte oprávnění pro přístup k tomuto prostředku. Pokud si myslíte, že se jedná o chybu, obraťte se o pomoc na správce vámi využívaného serveru.</translation>
     </message>
     <message>
-        <location filename="../src/libsync/abstractnetworkjob.cpp" line="554"/>
+        <location filename="../src/libsync/abstractnetworkjob.cpp" line="549"/>
         <source>An unexpected error occurred. Please try syncing again or contact contact your server administrator if the issue continues.</source>
         <translation>Došlo k neočekávané chybě. Zkuste synchronizovat znovu nebo, pokud problém přetrvává, se obraťte na správce vámi využívaného serveru.</translation>
+    </message>
+    <message>
+        <location filename="../src/libsync/abstractnetworkjob.cpp" line="554"/>
+        <source>An unexpected error occurred. Please try syncing again or contact your server administrator if the issue continues.</source>
+        <translation type="unfinished"/>
     </message>
 </context>
 <context>
@@ -6839,14 +6844,14 @@ Server odpověděl chybou: %2</translation>
         <translation>Nastavit stav</translation>
     </message>
     <message>
-        <location filename="../src/gui/tray/UserLine.qml" line="148"/>
-        <source>Status message</source>
-        <translation type="unfinished"/>
-    </message>
-    <message>
         <location filename="../src/gui/tray/UserLine.qml" line="168"/>
         <source>Remove account</source>
         <translation>Odebrat účet</translation>
+    </message>
+    <message>
+        <location filename="../src/gui/tray/UserLine.qml" line="148"/>
+        <source>Status message</source>
+        <translation>Stavová zpráva</translation>
     </message>
     <message>
         <location filename="../src/gui/tray/UserLine.qml" line="155"/>
@@ -6866,7 +6871,7 @@ Server odpověděl chybou: %2</translation>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="40"/>
         <source>Status message</source>
-        <translation type="unfinished"/>
+        <translation>Stavová zpráva</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="116"/>
@@ -6881,17 +6886,17 @@ Server odpověděl chybou: %2</translation>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="205"/>
         <source>Cancel</source>
-        <translation type="unfinished"/>
+        <translation>Storno</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="212"/>
         <source>Clear</source>
-        <translation type="unfinished"/>
+        <translation>Vyčistit</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusMessageView.qml" line="221"/>
         <source>Apply</source>
-        <translation type="unfinished"/>
+        <translation>Použít</translation>
     </message>
 </context>
 <context>
@@ -6899,22 +6904,22 @@ Server odpověděl chybou: %2</translation>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="42"/>
         <source>Online status</source>
-        <translation type="unfinished"/>
+        <translation>Stav online</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="51"/>
         <source>Online</source>
-        <translation type="unfinished"/>
+        <translation>Online</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="61"/>
         <source>Away</source>
-        <translation type="unfinished"/>
+        <translation>Pryč</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="72"/>
         <source>Busy</source>
-        <translation type="unfinished"/>
+        <translation>Zaneprázdněn/a</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="82"/>
@@ -6929,17 +6934,17 @@ Server odpověděl chybou: %2</translation>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="94"/>
         <source>Invisible</source>
-        <translation type="unfinished"/>
+        <translation>Neviditelný</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="95"/>
         <source>Appear offline</source>
-        <translation type="unfinished"/>
+        <translation>Jevit se offline</translation>
     </message>
     <message>
         <location filename="../src/gui/UserStatusSetStatusView.qml" line="106"/>
         <source>Status message</source>
-        <translation type="unfinished"/>
+        <translation>Stavová zpráva</translation>
     </message>
 </context>
 <context>
