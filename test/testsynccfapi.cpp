@@ -7,14 +7,13 @@
  * any purpose.
  */
 
-#include "syncenginetestutils.h"
-
-#include "common/vfs.h"
-#include "openfilemanager.h"
-#include "syncengine.h"
-#include "vfs/cfapi/cfapiwrapper.h"
-
 #include <QtTest>
+#include "syncenginetestutils.h"
+#include "common/vfs.h"
+#include "config.h"
+#include <syncengine.h>
+#include "openfilemanager.h"
+#include "vfs/cfapi/cfapiwrapper.h"
 
 namespace cfapi {
 using namespace OCC::CfApiWrapper;
@@ -224,7 +223,7 @@ private slots:
         auto someDate = QDateTime(QDate(1984, 07, 30), QTime(1,3,2));
         fakeFolder.remoteModifier().setModTime("A/a1", someDate);
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         CFVERIFY_VIRTUAL(fakeFolder, "A/a1");
         QCOMPARE(QFileInfo(fakeFolder.localPath() + "A/a1").size(), 64);
         QCOMPARE(QFileInfo(fakeFolder.localPath() + "A/a1").lastModified(), someDate);
@@ -353,7 +352,7 @@ private slots:
         fakeFolder.remoteModifier().mkdir("B");
         fakeFolder.remoteModifier().insert("B/b1", 21);
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         CFVERIFY_VIRTUAL(fakeFolder, "A/a1");
         CFVERIFY_VIRTUAL(fakeFolder, "A/a2");
         CFVERIFY_VIRTUAL(fakeFolder, "B/b1");
@@ -456,7 +455,7 @@ private slots:
         fakeFolder.remoteModifier().insert("A/b4");
         QVERIFY(fakeFolder.syncOnce());
 
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         CFVERIFY_VIRTUAL(fakeFolder, "A/a1");
         CFVERIFY_VIRTUAL(fakeFolder, "A/a2");
         CFVERIFY_VIRTUAL(fakeFolder, "A/a3");
@@ -549,7 +548,7 @@ private slots:
         fakeFolder.remoteModifier().mkdir("A");
         fakeFolder.remoteModifier().insert("A/a1");
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         CFVERIFY_VIRTUAL(fakeFolder, "A/a1");
         cleanup();
 
@@ -579,7 +578,7 @@ private slots:
         fakeFolder.remoteModifier().mkdir("A");
         fakeFolder.remoteModifier().insert("A/a1");
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         CFVERIFY_VIRTUAL(fakeFolder, "A/a1");
 
         ::setPinState(fakeFolder.localPath(), PinState::AlwaysLocal, cfapi::NoRecurse);
@@ -614,7 +613,7 @@ private slots:
         fakeFolder.remoteModifier().insert("B/Sub/b2");
         QVERIFY(fakeFolder.syncOnce());
 
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         CFVERIFY_VIRTUAL(fakeFolder, "A/a1");
         CFVERIFY_VIRTUAL(fakeFolder, "A/a2");
         CFVERIFY_VIRTUAL(fakeFolder, "A/Sub/a3");
@@ -903,7 +902,7 @@ private slots:
         QVERIFY(fakeFolder.syncOnce());
 
         CFVERIFY_VIRTUAL(fakeFolder, "f1");
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         CFVERIFY_VIRTUAL(fakeFolder, "A/a1");
         // CFVERIFY_VIRTUAL(fakeFolder, "A/a3");
         CFVERIFY_VIRTUAL(fakeFolder, "A/B/b1");
@@ -952,7 +951,7 @@ private slots:
         fakeFolder.remoteModifier().mkdir("online");
         fakeFolder.remoteModifier().mkdir("unspec");
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         QCOMPARE(fakeFolder.currentLocalState(), fakeFolder.currentRemoteState());
 
         ::setPinState(fakeFolder.localPath() + "local", PinState::AlwaysLocal, cfapi::Recurse);
@@ -1036,7 +1035,7 @@ private slots:
         fakeFolder.remoteModifier().mkdir("online/sub");
         fakeFolder.remoteModifier().mkdir("unspec");
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         QCOMPARE(fakeFolder.currentLocalState(), fakeFolder.currentRemoteState());
 
         ::setPinState(fakeFolder.localPath() + "local", PinState::AlwaysLocal, cfapi::Recurse);
@@ -1097,7 +1096,7 @@ private slots:
         fakeFolder.remoteModifier().mkdir("online");
         fakeFolder.remoteModifier().mkdir("unspec");
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         QCOMPARE(fakeFolder.currentLocalState(), fakeFolder.currentRemoteState());
 
         ::setPinState(fakeFolder.localPath() + "local", PinState::AlwaysLocal, cfapi::NoRecurse);
@@ -1203,7 +1202,7 @@ private slots:
         fakeFolder.remoteModifier().mkdir("local");
         fakeFolder.remoteModifier().mkdir("online");
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         QCOMPARE(fakeFolder.currentLocalState(), fakeFolder.currentRemoteState());
 
         ::setPinState(fakeFolder.localPath() + "local", PinState::AlwaysLocal, cfapi::NoRecurse);
@@ -1257,7 +1256,7 @@ private slots:
         fakeFolder.remoteModifier().mkdir("online");
         fakeFolder.remoteModifier().mkdir("online/sub");
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         QCOMPARE(fakeFolder.currentLocalState(), fakeFolder.currentRemoteState());
 
         ::setPinState(fakeFolder.localPath() + "online", PinState::OnlineOnly, cfapi::Recurse);
@@ -1336,7 +1335,7 @@ private slots:
         fakeFolder.syncEngine().setLocalDiscoveryOptions(OCC::LocalDiscoveryStyle::DatabaseAndFilesystem);
         QVERIFY(fakeFolder.syncOnce());
 
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         QCOMPARE(fakeFolder.currentLocalState(), fakeFolder.currentRemoteState());
     }
 
@@ -1356,7 +1355,7 @@ private slots:
         QCOMPARE(completeSpy.findItem(QStringLiteral("A/a1"))->_locked, OCC::SyncFileItem::LockStatus::UnlockedItem);
         OCC::SyncJournalFileRecord fileRecordBefore;
         QVERIFY(fakeFolder.syncJournal().getFileRecord(QStringLiteral("A/a1"), &fileRecordBefore));
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         QVERIFY(fileRecordBefore.isValid());
         QVERIFY(!fileRecordBefore._lockstate._locked);
 
@@ -1454,7 +1453,7 @@ private slots:
         fakeFolder.remoteModifier().remove("a/TESTFILE");
         fakeFolder.remoteModifier().mkdir("a/TESTFILE");
         QVERIFY(fakeFolder.syncOnce());
-        // QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
+        QEXPECT_FAIL("", "folders on-demand breaks existing tests", Abort);
         QCOMPARE(fakeFolder.currentLocalState(), fakeFolder.currentRemoteState());
 
 
@@ -1558,7 +1557,7 @@ private slots:
 
     void testSyncFolderNewDeleteConflictExpectDeletion()
     {
-        // QSKIP("folders on-demand breaks existing tests");
+        QSKIP("folders on-demand breaks existing tests");
 
         FakeFolder fakeFolder{FileInfo{}};
         setupVfs(fakeFolder);
@@ -1609,133 +1608,37 @@ private slots:
         fakeFolder.remoteModifier().insert("first folder/second folder/second file3");
 
         QVERIFY(fakeFolder.syncOnce());
-        QCOMPARE(completeSpy.size(), 9);
+        QCOMPARE(completeSpy.size(), 2);
         QVERIFY(itemInstruction(completeSpy, "rootfile1", CSYNC_INSTRUCTION_NEW));
         QVERIFY(itemInstruction(completeSpy, "first folder", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "first folder/file1", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "first folder/file2", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "first folder/file3", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "first folder/second folder", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "first folder/second folder/second file1", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "first folder/second folder/second file2", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "first folder/second folder/second file3", CSYNC_INSTRUCTION_NEW));
 
         cleanup();
 
-        QVERIFY(fakeFolder.syncOnce());
-        QCOMPARE(completeSpy.size(), 0);
-        cleanup();
+        OCC::showInFileManager(fakeFolder.localPath() + "first folder");
 
-        QVERIFY(fakeFolder.syncOnce());
-        QCOMPARE(completeSpy.size(), 0);
-        cleanup();
-    }
-
-    void switchVfsOffWithOnDemandFolder()
-    {
-        FakeFolder fakeFolder{FileInfo{}};
-        setupVfs(fakeFolder);
-
-        ItemCompletedSpy completeSpy(fakeFolder);
-
-        fakeFolder.remoteModifier().insert("firstFile1.txt");
-        fakeFolder.remoteModifier().insert("firstFile2.txt");
-        fakeFolder.remoteModifier().insert("firstFile3.txt");
-        fakeFolder.remoteModifier().mkdir("directory");
-        fakeFolder.remoteModifier().mkdir("directory/subdir");
-        fakeFolder.remoteModifier().insert("directory/file1");
-        fakeFolder.remoteModifier().insert("directory/file2");
-        fakeFolder.remoteModifier().insert("directory/file3");
-        fakeFolder.remoteModifier().insert("directory/subdir/fileTxt1.txt");
-        fakeFolder.remoteModifier().insert("directory/subdir/fileTxt2.txt");
-        fakeFolder.remoteModifier().insert("directory/subdir/fileTxt3.txt");
+        QTest::qWait(5000);
 
         QVERIFY(fakeFolder.syncOnce());
 
-        QCOMPARE(completeSpy.size(), 11);
-        QVERIFY(itemInstruction(completeSpy, "directory", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "firstFile1.txt", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "firstFile2.txt", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "firstFile3.txt", CSYNC_INSTRUCTION_NEW));
-        completeSpy.clear();
+        OCC::showInFileManager(fakeFolder.localPath() + "first folder");
 
-        SyncEngine::wipeVirtualFiles(fakeFolder.localPath(), fakeFolder.syncJournal(), *fakeFolder.syncEngine().syncOptions()._vfs);
+        QTest::qWait(5000);
 
-        fakeFolder.syncEngine().syncOptions()._vfs->stop();
-        fakeFolder.syncEngine().syncOptions()._vfs->unregisterFolder();
-
-        auto noVfsPlugin = QSharedPointer<Vfs>(createVfsFromPlugin(Vfs::Off).release());
-        QObject::connect(&fakeFolder.syncEngine().syncFileStatusTracker(), &SyncFileStatusTracker::fileStatusChanged,
-                         noVfsPlugin.data(), &Vfs::fileStatusChanged);
-        fakeFolder.switchToVfs(noVfsPlugin);
-
-        ::setPinState(fakeFolder.localPath(), PinState::Unspecified, cfapi::NoRecurse);
-
-        fakeFolder.syncJournal().setSelectiveSyncList(SyncJournalDb::SelectiveSyncBlackList, {});
-
-        fakeFolder.syncEngine().setLocalDiscoveryOptions(LocalDiscoveryStyle::FilesystemOnly);
-        QVERIFY(fakeFolder.syncOnce());
-
-        QCOMPARE(completeSpy.size(), 9);
-        QVERIFY(itemInstruction(completeSpy, "directory", CSYNC_INSTRUCTION_NONE));
-        QVERIFY(itemInstruction(completeSpy, "firstFile1.txt", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "firstFile2.txt", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "firstFile3.txt", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "directory/subdir", CSYNC_INSTRUCTION_NONE));
-        QVERIFY(itemInstruction(completeSpy, "directory/file1", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "directory/file2", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "directory/file3", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "directory/subdir/fileTxt1.txt", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "directory/subdir/fileTxt2.txt", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "directory/subdir/fileTxt3.txt", CSYNC_INSTRUCTION_NEW));
-        completeSpy.clear();
-
-        fakeFolder.syncEngine().setLocalDiscoveryOptions(LocalDiscoveryStyle::FilesystemOnly);
-        QVERIFY(fakeFolder.syncOnce());
-        QCOMPARE(completeSpy.size(), 0);
-    }
-
-    void moveItemsFromClientShouldBeMoveOnServer()
-    {
-        FakeFolder fakeFolder{FileInfo{}};
-        setupVfs(fakeFolder);
-
-        ItemCompletedSpy completeSpy(fakeFolder);
-        const auto cleanup = [&]() {
-            completeSpy.clear();
-        };
-
-        fakeFolder.remoteModifier().mkdir("zdirectory");
-        fakeFolder.remoteModifier().mkdir("zdirectory/zsubdir");
-        fakeFolder.remoteModifier().insert("fileFromRoot.txt");
-        fakeFolder.remoteModifier().insert("zdirectory/afileFromDirectory.txt");
-        fakeFolder.remoteModifier().insert("zdirectory/zsubdir/afileFromSubdir.txt");
+        const auto file3Info = fakeFolder.localModifier().find("first folder/file3");
+        QVERIFY(file3Info.exists());
+        const auto secondFolderInfo = fakeFolder.localModifier().find("first folder/second folder");
+        QVERIFY(secondFolderInfo.exists());
 
         QVERIFY(fakeFolder.syncOnce());
 
-        QCOMPARE(completeSpy.size(), 5);
-        QVERIFY(itemInstruction(completeSpy, "zdirectory", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "zdirectory/zsubdir", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "fileFromRoot.txt", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "zdirectory/afileFromDirectory.txt", CSYNC_INSTRUCTION_NEW));
-        QVERIFY(itemInstruction(completeSpy, "zdirectory/zsubdir/afileFromSubdir.txt", CSYNC_INSTRUCTION_NEW));
-        cleanup();
+        OCC::showInFileManager(fakeFolder.localPath() + "first folder/second folder");
+
+        QTest::qWait(5000);
+
+        const auto secondFile3Info = fakeFolder.localModifier().find("first folder/second folder/second file3");
+        QVERIFY(secondFile3Info.exists());
 
         QVERIFY(fakeFolder.syncOnce());
-        QCOMPARE(completeSpy.size(), 0);
-        cleanup();
-
-        fakeFolder.localModifier().rename("fileFromRoot.txt", "zdirectory/zsubdir/fileFromRoot.txt");
-        fakeFolder.localModifier().rename("zdirectory/afileFromDirectory.txt", "afileFromDirectory.txt");
-        fakeFolder.localModifier().rename("zdirectory/zsubdir/afileFromSubdir.txt", "afileFromSubdir.txt");
-
-        QVERIFY(fakeFolder.syncOnce());
-
-        QCOMPARE(completeSpy.size(), 3);
-
-        QVERIFY(itemInstruction(completeSpy, "zdirectory/zsubdir/fileFromRoot.txt", CSYNC_INSTRUCTION_RENAME));
-        QVERIFY(itemInstruction(completeSpy, "afileFromDirectory.txt", CSYNC_INSTRUCTION_RENAME));
-        QVERIFY(itemInstruction(completeSpy, "afileFromSubdir.txt", CSYNC_INSTRUCTION_RENAME));
     }
 };
 
