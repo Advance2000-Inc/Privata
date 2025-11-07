@@ -111,10 +111,6 @@ void DiscoveryPhase::checkSelectiveSyncNewFolder(const QString &path,
         return callback(false);
     }
 
-    // if (_syncOptions._vfs->mode() == Vfs::WindowsCfApi) {
-    //     return callback(true);
-    // }
-
     checkFolderSizeLimit(path, [this, path, callback](const bool bigFolder) {
         if (bigFolder) {
             // we tell the UI there is a new folder
@@ -331,17 +327,8 @@ void DiscoveryPhase::slotItemDiscovered(const OCC::SyncFileItemPtr &item)
     }
 }
 
-DiscoverySingleLocalDirectoryJob::DiscoverySingleLocalDirectoryJob(const AccountPtr &account,
-                                                                   const QString &localPath,
-                                                                   OCC::Vfs *vfs,
-                                                                   bool fileSystemReliablePermissions,
-                                                                   QObject *parent)
-    : QObject{parent}
-    , QRunnable{}
-    , _localPath{localPath}
-    , _account{account}
-    , _vfs{vfs}
-    , _fileSystemReliablePermissions{fileSystemReliablePermissions}
+DiscoverySingleLocalDirectoryJob::DiscoverySingleLocalDirectoryJob(const AccountPtr &account, const QString &localPath, OCC::Vfs *vfs, QObject *parent)
+ : QObject(parent), QRunnable(), _localPath(localPath), _account(account), _vfs(vfs)
 {
     qRegisterMetaType<QVector<OCC::LocalInfo> >("QVector<OCC::LocalInfo>");
 }
@@ -374,7 +361,7 @@ void DiscoverySingleLocalDirectoryJob::run() {
     QVector<LocalInfo> results;
     while (true) {
         errno = 0;
-        auto dirent = csync_vio_local_readdir(dh, _vfs, _fileSystemReliablePermissions);
+        auto dirent = csync_vio_local_readdir(dh, _vfs);
         if (!dirent)
             break;
         if (dirent->type == ItemTypeSkip)
