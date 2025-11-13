@@ -109,6 +109,7 @@ AccountManager::AccountsRestoreResult AccountManager::restore(const bool alsoRes
     if (skipSettingsKeys.contains(settings->group())) {
         // Should not happen: bad container keys should have been deleted
         qCWarning(lcAccountManager) << "Accounts structure is too new, ignoring";
+        emit(accountListInitialized());
         return AccountsRestoreSuccessWithSkipped;
     }
 
@@ -116,11 +117,13 @@ AccountManager::AccountsRestoreResult AccountManager::restore(const bool alsoRes
 #if !DISABLE_ACCOUNT_MIGRATION
     if (settings->childGroups().isEmpty() && !settings->contains(QLatin1String(versionC)) && alsoRestoreLegacySettings) {
         restoreFromLegacySettings();
+        emit(accountListInitialized());
         return AccountsRestoreSuccessFromLegacyVersion;
     }
 #endif
 
     if (settings->childGroups().isEmpty()) {
+        emit(accountListInitialized());
         return AccountsNotFound;
     }
 
@@ -149,6 +152,8 @@ AccountManager::AccountsRestoreResult AccountManager::restore(const bool alsoRes
             result = AccountsRestoreSuccessWithSkipped;
         }
     }
+
+    emit(accountListInitialized());
 
     ConfigFile().cleanupGlobalNetworkConfiguration();
     ClientProxy().cleanupGlobalNetworkConfiguration();   

@@ -4,16 +4,19 @@
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
-#include "configfile.h"
-
-#include "common/asserts.h"
-#include "common/utility.h"
 #include "config.h"
-#include "creds/keychainchunk.h"
-#include "csync_exclude.h"
+
+#include "configfile.h"
 #include "theme.h"
-#include "updatechannel.h"
 #include "version.h"
+#include "common/utility.h"
+#include "common/asserts.h"
+#include "version.h"
+
+#include "creds/abstractcredentials.h"
+#include "creds/keychainchunk.h"
+
+#include "csync_exclude.h"
 
 #ifndef TOKEN_AUTH_ONLY
 #include <QWidget>
@@ -36,14 +39,18 @@
 namespace {
 static constexpr char showMainDialogAsNormalWindowC[] = "showMainDialogAsNormalWindow";
 static constexpr char showConfigBackupWarningC[] = "showConfigBackupWarning";
+
 static constexpr char remotePollIntervalC[] = "remotePollInterval";
 static constexpr char forceSyncIntervalC[] = "forceSyncInterval";
 static constexpr char fullLocalDiscoveryIntervalC[] = "fullLocalDiscoveryInterval";
 static constexpr char notificationRefreshIntervalC[] = "notificationRefreshInterval";
+static constexpr char monoIconsC[] = "monoIcons";
 static constexpr char deleteFilesThresholdC[] = "deleteFilesThreshold";
 static constexpr char skipUpdateCheckC[] = "skipUpdateCheck";
+static constexpr char autoUpdateCheckC[] = "autoUpdateCheck";
 static constexpr char updateCheckIntervalC[] = "updateCheckInterval";
 static constexpr char updateSegmentC[] = "updateSegment";
+static constexpr char updateChannelC[] = "updateChannel";
 static constexpr char overrideServerUrlC[] = "overrideServerUrl";
 static constexpr char overrideLocalDirC[] = "overrideLocalDir";
 static constexpr char geometryC[] = "geometry";
@@ -58,7 +65,7 @@ static constexpr char logDebugC[] = "logDebug";
 static constexpr char logExpireC[] = "logExpire";
 static constexpr char logFlushC[] = "logFlush";
 static constexpr char showExperimentalOptionsC[] = "showExperimentalOptions";
-static constexpr char clientPreviousVersionC[] = "clientPreviousVersion";
+static constexpr char clientVersionC[] = "clientVersion";
 
 static constexpr char proxyHostC[] = "Proxy/host";
 static constexpr char proxyTypeC[] = "Proxy/type";
@@ -66,6 +73,14 @@ static constexpr char proxyPortC[] = "Proxy/port";
 static constexpr char proxyUserC[] = "Proxy/user";
 static constexpr char proxyPassC[] = "Proxy/pass";
 static constexpr char proxyNeedsAuthC[] = "Proxy/needsAuth";
+
+static constexpr char newBigFolderSizeLimitC[] = "newBigFolderSizeLimit";
+static constexpr char useNewBigFolderSizeLimitC[] = "useNewBigFolderSizeLimit";
+static constexpr char notifyExistingFoldersOverLimitC[] = "notifyExistingFoldersOverLimit";
+static constexpr char stopSyncingExistingFoldersOverLimitC[] = "stopSyncingExistingFoldersOverLimit";
+static constexpr char confirmExternalStorageC[] = "confirmExternalStorage";
+static constexpr char moveToTrashC[] = "moveToTrash";
+
 static constexpr char forceLoginV2C[] = "forceLoginV2";
 
 static constexpr char certPath[] = "http_certificatePath";
@@ -74,7 +89,15 @@ static constexpr char certPasswd[] = "http_certificatePasswd";
 static constexpr char serverHasValidSubscriptionC[] = "serverHasValidSubscription";
 static constexpr char desktopEnterpriseChannelName[] = "desktopEnterpriseChannel";
 
+static const QStringList defaultUpdateChannelsList { QStringLiteral("stable"), QStringLiteral("beta"), QStringLiteral("daily") };
+static const QString defaultUpdateChannelName = "stable";
+static const QStringList enterpriseUpdateChannelsList { QStringLiteral("stable"), QStringLiteral("enterprise") };
+static const QString defaultEnterpriseChannel = "enterprise";
+
 static constexpr char languageC[] = "language";
+
+static constexpr char lastSelectedAccountC[] = "lastSelectedAccount";
+
 static constexpr int deleteFilesThresholdDefaultValue = 100;
 }
 
@@ -86,7 +109,6 @@ Q_LOGGING_CATEGORY(lcConfigFile, "nextcloud.sync.configfile", QtInfoMsg)
 
 QString ConfigFile::_confDir = {};
 QString ConfigFile::_discoveredLegacyConfigPath = {};
-ConfigFile::MigrationPhase ConfigFile::_migrationPhase = ConfigFile::MigrationPhase::NotStarted;
 
 static chrono::milliseconds millisecondsValue(const QSettings &setting, const char *key,
     chrono::milliseconds defaultValue)
@@ -139,8 +161,9 @@ ConfigFile::ConfigFile()
 
     const QString config = configFile();
 
+
     QSettings settings(config, QSettings::IniFormat);
-    settings.beginGroup(defaultConnectionGroupName());
+    settings.beginGroup(defaultConnection());
 }
 
 bool ConfigFile::setConfDir(const QString &value)
@@ -172,7 +195,7 @@ bool ConfigFile::optionalServerNotifications() const
 bool ConfigFile::showChatNotifications() const
 {
     const QSettings settings(configFile(), QSettings::IniFormat);
-    return settings.value(showChatNotificationsC, true).toBool();
+    return settings.value(showChatNotificationsC, true).toBool() && optionalServerNotifications();
 }
 
 void ConfigFile::setShowChatNotifications(const bool show)
@@ -185,7 +208,7 @@ void ConfigFile::setShowChatNotifications(const bool show)
 bool ConfigFile::showCallNotifications() const
 {
     const QSettings settings(configFile(), QSettings::IniFormat);
-    return settings.value(showCallNotificationsC, true).toBool();
+    return settings.value(showCallNotificationsC, true).toBool() && optionalServerNotifications();
 }
 
 void ConfigFile::setShowCallNotifications(bool show)
@@ -198,7 +221,7 @@ void ConfigFile::setShowCallNotifications(bool show)
 bool ConfigFile::showQuotaWarningNotifications() const
 {
     const QSettings settings(configFile(), QSettings::IniFormat);
-    return settings.value(showQuotaWarningNotificationsC, true).toBool();
+    return settings.value(showQuotaWarningNotificationsC, true).toBool() && optionalServerNotifications();
 }
 
 void ConfigFile::setShowQuotaWarningNotifications(bool show)
@@ -321,15 +344,16 @@ void ConfigFile::restoreGeometryHeader(QHeaderView *header)
 QVariant ConfigFile::getPolicySetting(const QString &setting, const QVariant &defaultValue) const
 {
     if (Utility::isWindows()) {
-        const auto appName = isUnbrandedToBrandedMigrationInProgress() ? unbrandedAppName : Theme::instance()->appNameGUI();
         // check for policies first and return immediately if a value is found.
-        QSettings userPolicy(QString::fromLatin1(R"(HKEY_CURRENT_USER\Software\Policies\%1\%2)").arg(APPLICATION_VENDOR, appName),
+        QSettings userPolicy(QString::fromLatin1(R"(HKEY_CURRENT_USER\Software\Policies\%1\%2)")
+                                 .arg(APPLICATION_VENDOR, Theme::instance()->appNameGUI()),
             QSettings::NativeFormat);
         if (userPolicy.contains(setting)) {
             return userPolicy.value(setting);
         }
 
-        QSettings machinePolicy(QString::fromLatin1(R"(HKEY_LOCAL_MACHINE\Software\Policies\%1\%2)").arg(APPLICATION_VENDOR, appName),
+        QSettings machinePolicy(QString::fromLatin1(R"(HKEY_LOCAL_MACHINE\Software\Policies\%1\%2)")
+                                    .arg(APPLICATION_VENDOR, Theme::instance()->appNameGUI()),
             QSettings::NativeFormat);
         if (machinePolicy.contains(setting)) {
             return machinePolicy.value(setting);
@@ -491,53 +515,56 @@ bool ConfigFile::exists()
     return file.exists();
 }
 
-QString ConfigFile::defaultConnectionGroupName() const
+QString ConfigFile::defaultConnection() const
 {
     return Theme::instance()->appName();
 }
 
 void ConfigFile::storeData(const QString &group, const QString &key, const QVariant &value)
 {
-    const QString groupName(group.isEmpty() ? defaultConnectionGroupName() : group);
+    const QString con(group.isEmpty() ? defaultConnection() : group);
     QSettings settings(configFile(), QSettings::IniFormat);
 
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
     settings.setValue(key, value);
     settings.sync();
 }
 
 QVariant ConfigFile::retrieveData(const QString &group, const QString &key) const
 {
-    const QString groupName(group.isEmpty() ? defaultConnectionGroupName() : group);
+    const QString con(group.isEmpty() ? defaultConnection() : group);
     QSettings settings(configFile(), QSettings::IniFormat);
 
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
     return settings.value(key);
 }
 
 void ConfigFile::removeData(const QString &group, const QString &key)
 {
-    const QString groupName(group.isEmpty() ? defaultConnectionGroupName() : group);
+    const QString con(group.isEmpty() ? defaultConnection() : group);
     QSettings settings(configFile(), QSettings::IniFormat);
 
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
     settings.remove(key);
 }
 
 bool ConfigFile::dataExists(const QString &group, const QString &key) const
 {
-    const QString groupName(group.isEmpty() ? defaultConnectionGroupName() : group);
+    const QString con(group.isEmpty() ? defaultConnection() : group);
     QSettings settings(configFile(), QSettings::IniFormat);
 
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
     return settings.contains(key);
 }
 
-chrono::milliseconds ConfigFile::remotePollInterval(const QString &connectionGroupName) const
+chrono::milliseconds ConfigFile::remotePollInterval(const QString &connection) const
 {
-    const auto groupName = connectionGroupName.isEmpty() ? defaultConnectionGroupName() : connectionGroupName;
+    QString con(connection);
+    if (connection.isEmpty())
+        con = defaultConnection();
+
     QSettings settings(configFile(), QSettings::IniFormat);
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
 
     auto defaultPollInterval = chrono::milliseconds(DEFAULT_REMOTE_POLL_INTERVAL);
     auto remoteInterval = millisecondsValue(settings, remotePollIntervalC, defaultPollInterval);
@@ -548,25 +575,32 @@ chrono::milliseconds ConfigFile::remotePollInterval(const QString &connectionGro
     return remoteInterval;
 }
 
-void ConfigFile::setRemotePollInterval(chrono::milliseconds interval, const QString &connectionGroupName)
+void ConfigFile::setRemotePollInterval(chrono::milliseconds interval, const QString &connection)
 {
-    const auto groupName = connectionGroupName.isEmpty() ? defaultConnectionGroupName() : connectionGroupName;
+    QString con(connection);
+    if (connection.isEmpty())
+        con = defaultConnection();
+
     if (interval < chrono::seconds(5)) {
         qCWarning(lcConfigFile) << "Remote Poll interval of " << interval.count() << " is below five seconds.";
         return;
     }
     QSettings settings(configFile(), QSettings::IniFormat);
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
     settings.setValue(QLatin1String(remotePollIntervalC), qlonglong(interval.count()));
     settings.sync();
 }
 
-chrono::milliseconds ConfigFile::forceSyncInterval(const QString &connectionGroupName) const
+chrono::milliseconds ConfigFile::forceSyncInterval(const QString &connection) const
 {
-    const auto groupName = connectionGroupName.isEmpty() ? defaultConnectionGroupName() : connectionGroupName;
-    auto pollInterval = remotePollInterval(groupName);
+    auto pollInterval = remotePollInterval(connection);
+
+    QString con(connection);
+    if (connection.isEmpty())
+        con = defaultConnection();
     QSettings settings(configFile(), QSettings::IniFormat);
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
+
     auto defaultInterval = chrono::hours(2);
     auto interval = millisecondsValue(settings, forceSyncIntervalC, defaultInterval);
     if (interval < pollInterval) {
@@ -579,15 +613,17 @@ chrono::milliseconds ConfigFile::forceSyncInterval(const QString &connectionGrou
 chrono::milliseconds OCC::ConfigFile::fullLocalDiscoveryInterval() const
 {
     QSettings settings(configFile(), QSettings::IniFormat);
-    settings.beginGroup(defaultConnectionGroupName());
+    settings.beginGroup(defaultConnection());
     return millisecondsValue(settings, fullLocalDiscoveryIntervalC, chrono::hours(1));
 }
 
-chrono::milliseconds ConfigFile::notificationRefreshInterval(const QString &connectionGroupName) const
+chrono::milliseconds ConfigFile::notificationRefreshInterval(const QString &connection) const
 {
-    const auto groupName = connectionGroupName.isEmpty() ? defaultConnectionGroupName() : connectionGroupName;
+    QString con(connection);
+    if (connection.isEmpty())
+        con = defaultConnection();
     QSettings settings(configFile(), QSettings::IniFormat);
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
 
     const auto defaultInterval = chrono::minutes(1);
     auto interval = millisecondsValue(settings, notificationRefreshIntervalC, defaultInterval);
@@ -598,11 +634,13 @@ chrono::milliseconds ConfigFile::notificationRefreshInterval(const QString &conn
     return interval;
 }
 
-chrono::milliseconds ConfigFile::updateCheckInterval(const QString &connectionGroupName) const
+chrono::milliseconds ConfigFile::updateCheckInterval(const QString &connection) const
 {
-    const auto groupName = connectionGroupName.isEmpty() ? defaultConnectionGroupName() : connectionGroupName;
+    QString con(connection);
+    if (connection.isEmpty())
+        con = defaultConnection();
     QSettings settings(configFile(), QSettings::IniFormat);
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
 
     auto defaultInterval = chrono::hours(10);
     auto interval = millisecondsValue(settings, updateCheckIntervalC, defaultInterval);
@@ -615,41 +653,53 @@ chrono::milliseconds ConfigFile::updateCheckInterval(const QString &connectionGr
     return interval;
 }
 
-bool ConfigFile::skipUpdateCheck(const QString &connectionGroupName) const
+bool ConfigFile::skipUpdateCheck(const QString &connection) const
 {
-    const auto groupName = connectionGroupName.isEmpty() ? defaultConnectionGroupName() : connectionGroupName;
-    QVariant fallback = getValue(QLatin1String(skipUpdateCheckC), groupName, false);
+    QString con(connection);
+    if (connection.isEmpty())
+        con = defaultConnection();
+
+    QVariant fallback = getValue(QLatin1String(skipUpdateCheckC), con, false);
     fallback = getValue(QLatin1String(skipUpdateCheckC), QString(), fallback);
 
     QVariant value = getPolicySetting(QLatin1String(skipUpdateCheckC), fallback);
     return value.toBool();
 }
 
-void ConfigFile::setSkipUpdateCheck(bool skip, const QString &connectionGroupName)
+void ConfigFile::setSkipUpdateCheck(bool skip, const QString &connection)
 {
-    const auto groupName = connectionGroupName.isEmpty() ? defaultConnectionGroupName() : connectionGroupName;
+    QString con(connection);
+    if (connection.isEmpty())
+        con = defaultConnection();
+
     QSettings settings(configFile(), QSettings::IniFormat);
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
 
     settings.setValue(QLatin1String(skipUpdateCheckC), QVariant(skip));
     settings.sync();
 }
 
-bool ConfigFile::autoUpdateCheck(const QString &connectionGroupName) const
+bool ConfigFile::autoUpdateCheck(const QString &connection) const
 {
-    const auto groupName = connectionGroupName.isEmpty() ? defaultConnectionGroupName() : connectionGroupName;
-    QVariant fallback = getValue(QLatin1String(autoUpdateCheckC), groupName, true);
+    QString con(connection);
+    if (connection.isEmpty())
+        con = defaultConnection();
+
+    QVariant fallback = getValue(QLatin1String(autoUpdateCheckC), con, true);
     fallback = getValue(QLatin1String(autoUpdateCheckC), QString(), fallback);
 
     QVariant value = getPolicySetting(QLatin1String(autoUpdateCheckC), fallback);
     return value.toBool();
 }
 
-void ConfigFile::setAutoUpdateCheck(bool autoCheck, const QString &connectionGroupName)
+void ConfigFile::setAutoUpdateCheck(bool autoCheck, const QString &connection)
 {
-    const auto groupName = connectionGroupName.isEmpty() ? defaultConnectionGroupName() : connectionGroupName;
+    QString con(connection);
+    if (connection.isEmpty())
+        con = defaultConnection();
+
     QSettings settings(configFile(), QSettings::IniFormat);
-    settings.beginGroup(groupName);
+    settings.beginGroup(con);
 
     settings.setValue(QLatin1String(autoUpdateCheckC), QVariant(autoCheck));
     settings.sync();
@@ -675,20 +725,14 @@ QStringList ConfigFile::validUpdateChannels() const
     const auto isBranded = Theme::instance()->isBranded();
 
     if (isBranded) {
-        return {UpdateChannel::defaultUpdateChannel().toString()};
+        return { defaultUpdateChannelName };
     }
 
-    const QList<UpdateChannel> *channel_list = &UpdateChannel::defaultUpdateChannelList();
     if (serverHasValidSubscription()) {
-        channel_list = &UpdateChannel::enterpriseUpdateChannelsList();
+        return enterpriseUpdateChannelsList;
     }
 
-    QStringList list;
-    for (const auto &channel : *channel_list) {
-        list.append(channel.toString());
-    }
-
-    return list;
+    return defaultUpdateChannelsList;
 }
 
 QString ConfigFile::defaultUpdateChannel() const
@@ -708,24 +752,14 @@ QString ConfigFile::defaultUpdateChannel() const
         return currentVersionSuffix;
     }
 
-    qCWarning(lcConfigFile()) << "Default update channel is" << UpdateChannel::defaultUpdateChannel().toString();
-    return UpdateChannel::defaultUpdateChannel().toString();
+    qCWarning(lcConfigFile()) << "Default update channel is" << defaultUpdateChannelName;
+    return defaultUpdateChannelName;
 }
 
 QString ConfigFile::currentUpdateChannel() const
 {
-    if (const auto isBranded = Theme::instance()->isBranded(); isBranded) {
-        return UpdateChannel::defaultUpdateChannel().toString();
-    }
-
     QSettings settings(configFile(), QSettings::IniFormat);
-    const auto currentChannel = UpdateChannel::fromString(settings.value(QLatin1String(updateChannelC), defaultUpdateChannel()).toString());
-    if (serverHasValidSubscription()) {
-        const auto enterpriseChannel = UpdateChannel::fromString(desktopEnterpriseChannel());
-        return UpdateChannel::mostStable(currentChannel, enterpriseChannel).toString();
-    }
-
-    return currentChannel.toString();
+    return settings.value(QLatin1String(updateChannelC), defaultUpdateChannel()).toString();
 }
 
 void ConfigFile::setUpdateChannel(const QString &channel)
@@ -816,7 +850,6 @@ QVariant ConfigFile::getValue(const QString &param, const QString &group,
     const QVariant &defaultValue) const
 {
     QVariant systemSetting;
-    const auto appName = isUnbrandedToBrandedMigrationInProgress() ? unbrandedAppName : Theme::instance()->appNameGUI();
     if (Utility::isMac()) {
         QSettings systemSettings(QLatin1String("/Library/Preferences/" APPLICATION_REV_DOMAIN ".plist"), QSettings::NativeFormat);
         if (!group.isEmpty()) {
@@ -824,13 +857,14 @@ QVariant ConfigFile::getValue(const QString &param, const QString &group,
         }
         systemSetting = systemSettings.value(param, defaultValue);
     } else if (Utility::isUnix()) {
-        QSettings systemSettings(QString(SYSCONFDIR "/%1/%1.conf").arg(appName), QSettings::NativeFormat);
+        QSettings systemSettings(QString(SYSCONFDIR "/%1/%1.conf").arg(Theme::instance()->appName()), QSettings::NativeFormat);
         if (!group.isEmpty()) {
             systemSettings.beginGroup(group);
         }
         systemSetting = systemSettings.value(param, defaultValue);
     } else { // Windows
-        QSettings systemSettings(QString::fromLatin1(R"(HKEY_LOCAL_MACHINE\Software\%1\%2)").arg(APPLICATION_VENDOR, appName),
+        QSettings systemSettings(QString::fromLatin1(R"(HKEY_LOCAL_MACHINE\Software\%1\%2)")
+                                     .arg(APPLICATION_VENDOR, Theme::instance()->appNameGUI()),
             QSettings::NativeFormat);
         if (!group.isEmpty()) {
             systemSettings.beginGroup(group);
@@ -1175,18 +1209,6 @@ void ConfigFile::setClientVersionString(const QString &version)
     settings.setValue(QLatin1String(clientVersionC), version);
 }
 
-QString ConfigFile::clientPreviousVersionString() const
-{
-    QSettings settings(configFile(), QSettings::IniFormat);
-    return settings.value(QLatin1String(clientPreviousVersionC), QString()).toString();
-}
-
-void ConfigFile::setClientPreviousVersionString(const QString &version)
-{
-    QSettings settings(configFile(), QSettings::IniFormat);
-    settings.setValue(QLatin1String(clientPreviousVersionC), version);
-}
-
 bool ConfigFile::launchOnSystemStartup() const
 {
     QSettings settings(configFile(), QSettings::IniFormat);
@@ -1214,13 +1236,13 @@ void ConfigFile::setServerHasValidSubscription(const bool valid)
 QString ConfigFile::desktopEnterpriseChannel() const
 {
     QSettings settings(configFile(), QSettings::IniFormat);
-    return settings.value(QLatin1String(desktopEnterpriseChannelName), UpdateChannel::defaultUpdateChannel().toString()).toString();
+    return settings.value(QLatin1String(desktopEnterpriseChannelName), defaultUpdateChannelName).toString();
 }
 
 void ConfigFile::setDesktopEnterpriseChannel(const QString &channel)
 {
     QSettings settings(configFile(), QSettings::IniFormat);
-    settings.setValue(QLatin1String(desktopEnterpriseChannelName), UpdateChannel::fromString(channel).toString());
+    settings.setValue(QLatin1String(desktopEnterpriseChannelName), channel);
 }
 
 QString ConfigFile::language() const
@@ -1233,6 +1255,18 @@ void ConfigFile::setLanguage(const QString& language)
 {
     QSettings settings(configFile(), QSettings::IniFormat);
     settings.setValue(QLatin1String(languageC), language);
+}
+
+uint ConfigFile::lastSelectedAccount() const
+{
+    QSettings settings(configFile(), QSettings::IniFormat);
+    return settings.value(QLatin1String(lastSelectedAccountC), QLatin1String("")).toUInt();
+}
+
+void ConfigFile::setLastSelectedAccount(const uint accountId)
+{
+    QSettings settings(configFile(), QSettings::IniFormat);
+    settings.setValue(QLatin1String(lastSelectedAccountC), accountId);
 }
 
 Q_GLOBAL_STATIC(QString, g_configFileName)
@@ -1352,61 +1386,6 @@ void ConfigFile::removeFileProviderDomainMappingByDomainIdentifier(const QString
     if (!accountIdentifier.isEmpty()) {
         removeData(QStringLiteral("FileProviderDomainUuids"), accountIdentifier);
     }
-}
-
-bool ConfigFile::isUpgrade() const
-{
-    const auto currentVersion = QVersionNumber::fromString(MIRALL_VERSION_STRING);
-    const auto previousVersion = QVersionNumber::fromString(clientPreviousVersionString());
-    return currentVersion > previousVersion;
-}
-
-bool ConfigFile::isDowngrade() const
-{
-    const auto currentVersion = QVersionNumber::fromString(MIRALL_VERSION_STRING);
-    const auto previousVersion = QVersionNumber::fromString(clientPreviousVersionString());
-    return previousVersion > currentVersion;
-}
-
-bool ConfigFile::shouldTryUnbrandedToBrandedMigration() const
-{
-    return migrationPhase() == ConfigFile::MigrationPhase::SetupFolders
-        && Theme::instance()->appName() != unbrandedAppName;
-}
-
-bool ConfigFile::isUnbrandedToBrandedMigrationInProgress() const
-{
-    return isMigrationInProgress() && Theme::instance()->appName() != unbrandedAppName;
-}
-
-bool ConfigFile::shouldTryToMigrate() const
-{
-    return hasVersionChanged() && (isUpgrade() || isDowngrade());
-}
-
-bool ConfigFile::hasVersionChanged() const
-{
-    const auto currentVersion = QVersionNumber::fromString(MIRALL_VERSION_STRING); //app running
-    const auto clientConfigVersion = QVersionNumber::fromString(clientVersionString()); //config version
-    return clientConfigVersion != currentVersion;
-}
-
-bool ConfigFile::isMigrationInProgress() const
-{
-    return _migrationPhase != MigrationPhase::NotStarted && _migrationPhase != MigrationPhase::Done;
-}
-
-void ConfigFile::setMigrationPhase(const MigrationPhase phase)
-{
-    // do not rollback
-    if (phase > _migrationPhase) {
-        _migrationPhase = phase;
-    }
-}
-
-ConfigFile::MigrationPhase ConfigFile::migrationPhase() const
-{
-    return _migrationPhase;
 }
 
 }
