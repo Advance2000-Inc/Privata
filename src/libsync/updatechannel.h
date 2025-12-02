@@ -1,17 +1,16 @@
 /*
  * SPDX-FileCopyrightText: 2025 Nextcloud GmbH and Nextcloud contributors
+ * SPDX-FileCopyrightText: 2025 ownCloud GmbH
  * SPDX-License-Identifier: GPL-2.0-or-later
  */
 
 #ifndef UPDATECHANNEL_H
 #define UPDATECHANNEL_H
 
-#include "owncloudlib.h"
-
 #include <QList>
 #include <QString>
 
-class OWNCLOUDSYNC_EXPORT UpdateChannel
+class UpdateChannel
 {
 public:
     enum class ChannelName : unsigned int {
