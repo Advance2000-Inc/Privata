@@ -116,7 +116,10 @@ AccountManager::AccountsRestoreResult AccountManager::restore(const bool alsoRes
     // If there are no accounts, check the old format.
 #if !DISABLE_ACCOUNT_MIGRATION
     if (settings->childGroups().isEmpty() && !settings->contains(QLatin1String(versionC)) && alsoRestoreLegacySettings) {
-        restoreFromLegacySettings();
+        if(!restoreFromLegacySettings()) {
+            return AccountsNotFound;
+        }
+
         emit(accountListInitialized());
         return AccountsRestoreSuccessFromLegacyVersion;
     }
