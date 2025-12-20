@@ -4,7 +4,10 @@
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0071 NEW) # Enable use of QtQuick compiler/generated code
 
-project(client)
+project(privata)
+set(CMAKE_AUTOMOC OFF)
+set(CMAKE_AUTOUIC OFF)
+set(CMAKE_AUTORCC OFF)
 
 if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum OSX deployment version")
@@ -213,7 +216,7 @@ option(BUILD_LIBRARIES_ONLY "BUILD_LIBRARIES_ONLY" OFF)
 option(BUILD_GUI "BUILD_GUI" ON)
 
 # build the tests
-option(BUILD_TESTING "BUILD_TESTING" ON)
+option(BUILD_TESTING "BUILD_TESTING" OFF)
 
 # allows to run nextclouddev in parallel to nextcloud + logs
 option(NEXTCLOUD_DEV "NEXTCLOUD_DEV" OFF)
