@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Ebene_1" xmlns="http://www.w3.org/2000/svg" version="1.1" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:svg="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 300 300">
+  <!-- Generator: Adobe Illustrator 30.0.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 123)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: url(#linear-gradient2);
+      }
+
+      .st1 {
+        fill: #ffeeb6;
+      }
+
+      .st2 {
+        fill: #fff;
+        stroke: #fff;
+        stroke-miterlimit: 10;
+      }
+
+      .st3 {
+        fill: #fde07f;
+      }
+
+      .st4 {
+        fill: url(#linear-gradient1);
+      }
+
+      .st5 {
+        fill: url(#linear-gradient4);
+      }
+
+      .st6 {
+        fill: url(#linear-gradient3);
+      }
+
+      .st7 {
+        fill: #18234b;
+      }
+
+      .st8 {
+        fill: url(#linear-gradient);
+      }
+    </style>
+    <linearGradient id="linear-gradient" x1="224.24" y1="50.74" x2="235.55" y2="72.15" gradientTransform="translate(0 302) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e5e5e5"/>
+      <stop offset="1" stop-color="#f2f2f2" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient1" x1="108.24" y1="9.74" x2="119.55" y2="31.15" gradientTransform="translate(0 302) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e5e5e5"/>
+      <stop offset="1" stop-color="#f2f2f2" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient2" x1="51.96" y1="116.9" x2="200.66" y2="197.21" gradientTransform="translate(0 302) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset=".32" stop-color="#ebc863"/>
+      <stop offset="1" stop-color="#fee182"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient3" x1="81.96" y1="185.39" x2="83.2" y2="79.21" gradientTransform="translate(0 302) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffefbc"/>
+      <stop offset="1" stop-color="#ffe495"/>
+    </linearGradient>
+    <linearGradient id="linear-gradient4" x1="58.96" y1="175.69" x2="117.19" y2="83.05" gradientTransform="translate(0 302) scale(1 -1)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffeaa5"/>
+      <stop offset="1" stop-color="#ffe086"/>
+    </linearGradient>
+  </defs>
+  <sodipodi:namedview id="namedview72" bordercolor="#666666" borderopacity="1.0" inkscape:current-layer="Ebene_1" inkscape:cx="123.48372" inkscape:cy="174.17704" inkscape:pagecheckerboard="0" inkscape:pageopacity="0.0" inkscape:pageshadow="2" inkscape:window-height="1046" inkscape:window-maximized="1" inkscape:window-width="1920" inkscape:window-x="0" inkscape:window-y="34" inkscape:zoom="1.9233304" pagecolor="#ffffff" showgrid="false"/>
+  <g id="g51">
+    <polygon id="polygon9" class="st8" points="221 245 251 236 221 222 221 245"/>
+    <polygon id="polygon16" class="st4" points="105 286 135 277 105 263 105 286"/>
+    <path id="path23" class="st0" d="M219,246H56c-1.7,0-3-1.3-3-3V33h151c1.7,0,3,1.3,3,3v125.2c0,.8.3,1.5.9,2.1l13.3,13.6c.5.6.9,1.3.9,2.1v64c-.1,1.7-1.4,3-3.1,3Z"/>
+    <g id="g39">
+      <path id="path30" class="st6" d="M103.5,286l-49.5-40V33l55.9,44.1c.7.6,1.1,1.4,1.1,2.4v131.5l-5,7v66.9c0,1.2-1.5,1.9-2.5,1.1Z"/>
+      <path id="path37" class="st5" d="M102.5,285.7l-49.5-40V33l55.8,44c.7.6,1.1,1.4,1.1,2.4v131.4l-5,7v66.8c0,1.2-1.4,1.9-2.4,1.1Z"/>
+    </g>
+    <g id="g49">
+      <rect id="rect41" class="st3" x="60" y="46" width="1" height="200"/>
+      <rect id="rect43" class="st3" x="56.5" y="46" width="1" height="200"/>
+      <rect id="rect45" class="st1" x="57.5" y="46" width="1" height="200"/>
+      <rect id="rect47" class="st1" x="61" y="46" width="1" height="200"/>
+    </g>
+  </g>
+  <circle id="circle1050" class="st7" cx="186.6" cy="203.4" r="64.4" inkscape:export-filename="nextcloud-icon.png" inkscape:export-xdpi="300" inkscape:export-ydpi="300"/>
+  <path class="st2" d="M196.66,161.3c4.74,1.89,9.28,3.98,13.93,6.16,10.8,4.93,26.62,10.42,32.31,21.41,7.77,15.06-3.32,37.9-20.75,39.32-12.13,1.04-21.89-5.68-32.5-10.23l-14.21,29.56-34.2-15.92c-16.58-8.81-18.57-28.99-6.54-42.73,13.93-16.01,32.78-5.31,48.03,1.99,0,0,13.93-29.56,13.93-29.56ZM206.89,180.73l-11.46,24.54s2.84,1.71,3.51,1.99c10.33,5.12,22.17,11.65,28.23-2.75,6.54-15.73-9.85-18.38-20.18-23.78h-.09ZM156.21,195.32c-5.02.19-8.91,4.17-10.8,8.62-6.82,15.82,9.76,18.76,20.18,24.16l11.46-24.54s-2.84-1.71-3.51-1.99c-4.26-2.18-12.79-6.35-17.34-6.16h0v-.09Z"/>
+</svg>
