@@ -7,7 +7,7 @@ cmake_policy(SET CMP0071 NEW) # Enable use of QtQuick compiler/generated code
 project(privata)
 set(CMAKE_AUTOMOC OFF)
 set(CMAKE_AUTOUIC OFF)
-set(CMAKE_AUTORCC OFF)
+set(CMAKE_AUTORCC ON)
 
 if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum OSX deployment version")
