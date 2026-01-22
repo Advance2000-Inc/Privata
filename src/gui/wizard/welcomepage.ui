@@ -152,6 +152,12 @@
        </item>
        <item>
         <widget class="QPushButton" name="createAccountButton">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="visible">
+          <bool>false</bool>
+         </property>
          <property name="text">
           <string>Sign up with provider</string>
          </property>
@@ -164,7 +170,17 @@
         </widget>
        </item>
        <item>
-        <widget class="OCC::LinkLabel" name="hostYourOwnServerLabel" native="true"/>
+        <widget class="OCC::LinkLabel" name="hostYourOwnServerLabel" native="true">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+        </widget>
        </item>
        <item>
         <spacer name="verticalSpacer_5">

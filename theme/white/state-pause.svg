@@ -1,1 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="16" height="16" viewBox="0 0 16 16"><defs><path id="a" d="M0,0 L16,0 L16,16 L0,16 L0,0 Z"/></defs><g fill="none" fill-rule="evenodd"><use xlink:href="#a" fill="#FFF"/><path fill="#FFF" fill-rule="nonzero" d="M8.8,12.8 L8.8,3.2 L12.8,3.2 L12.8,12.8 L8.8,12.8 Z M3.2,12.8 L3.2,3.2 L7.2,3.2 L7.2,12.8 L3.2,12.8 Z M10,11.6 L11.6,11.6 L11.6,4.4 L10,4.4 L10,11.6 Z M4.4,11.6 L6,11.6 L6,4.4 L4.4,4.4 L4.4,11.6 Z M4.4,4.4 L4.4,4.4 L4.4,11.6 L4.4,11.6 L4.4,4.4 Z M10,4.4 L10,4.4 L10,11.6 L10,11.6 L10,4.4 Z"/></g></svg>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 16 16">
+  <!-- Generator: Adobe Illustrator 30.0.0, SVG Export Plug-In . SVG Version: 2.1.1 Build 123)  -->
+  <defs>
+    <style>
+      .st0 {
+        stroke: #fff;
+        stroke-miterlimit: 10;
+      }
+
+      .st0, .st1 {
+        fill: #fff;
+      }
+    </style>
+  </defs>
+  <path class="st0" d="M9.1,3.45c.5.2.98.42,1.47.65,1.14.52,2.81,1.1,3.41,2.26.82,1.59-.35,4-2.19,4.15-1.28.11-2.31-.6-3.43-1.08l-1.5,3.12-3.61-1.68c-1.75-.93-1.96-3.06-.69-4.51,1.47-1.69,3.46-.56,5.07.21,0,0,1.47-3.12,1.47-3.12ZM10.18,5.5l-1.21,2.59s.3.18.37.21c1.09.54,2.34,1.23,2.98-.29.69-1.66-1.04-1.94-2.13-2.51h0ZM4.83,7.04c-.53.02-.94.44-1.14.91-.72,1.67,1.03,1.98,2.13,2.55l1.21-2.59s-.3-.18-.37-.21c-.45-.23-1.35-.67-1.83-.65h0Z"/>
+  <g>
+    <rect class="st1" x="12.81" y="12.79" width="1" height="3"/>
+    <rect class="st1" x="14.81" y="12.79" width="1" height="3"/>
+  </g>
+</svg>

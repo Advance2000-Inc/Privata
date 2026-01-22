@@ -251,11 +251,12 @@ GeneralSettings::GeneralSettings(QWidget *parent)
 
     // About legal notice
     connect(_ui->legalNoticeButton, &QPushButton::clicked, this, &GeneralSettings::slotShowLegalNotice);
+    _ui->legalNoticeButton->setVisible(false);
 
     connect(_ui->usageDocumentationButton, &QPushButton::clicked, this, []() {
         Utility::openBrowser(QUrl(Theme::instance()->helpUrl()));
     });
-
+    _ui->usageDocumentationButton->setVisible(false);
     loadMiscSettings();
 
     // misc
@@ -294,7 +295,7 @@ GeneralSettings::GeneralSettings(QWidget *parent)
 
     connect(_ui->ignoredFilesButton, &QAbstractButton::clicked, this, &GeneralSettings::slotIgnoreFilesEditor);
     connect(_ui->debugArchiveButton, &QAbstractButton::clicked, this, &GeneralSettings::slotCreateDebugArchive);
-
+    _ui->debugArchiveButton->setVisible(false);
     // accountAdded means the wizard was finished and the wizard might change some options.
     connect(AccountManager::instance(), &AccountManager::accountAdded, this, &GeneralSettings::loadMiscSettings);
 

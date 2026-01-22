@@ -20,11 +20,7 @@ bool UpdateChannel::isValid() const
 QString UpdateChannel::toString() const
 {
     using enum ChannelName;
-    static const QMap<ChannelName, QString> enumToNameLut = {{invalid, "invalid"},
-                                                             {daily, "daily"},
-                                                             {beta, "beta"},
-                                                             {stable, "stable"},
-                                                             {enterprise, "enterprise"}};
+    static const QMap<ChannelName, QString> enumToNameLut = {{stable, "stable"}};
     return enumToNameLut.value(_channelName);
 }
 
@@ -68,11 +64,7 @@ const UpdateChannel UpdateChannel::Enterprise = UpdateChannel::fromString("enter
 UpdateChannel UpdateChannel::fromString(const QString &channelName) // static
 {
     using enum ChannelName;
-    static const QMap<QString, ChannelName> nameToEnumLut = {{"invalid", invalid},
-                                                             {"daily", daily},
-                                                             {"beta", beta},
-                                                             {"stable", stable},
-                                                             {"enterprise", enterprise}};
+    static const QMap<QString, ChannelName> nameToEnumLut = {{"stable", stable}};
     auto channelEnum = nameToEnumLut.contains(channelName) ? nameToEnumLut.value(channelName) : invalid;
     return UpdateChannel(channelEnum);
 }

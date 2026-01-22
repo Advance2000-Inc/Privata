@@ -17,14 +17,16 @@ REM
 REM see also: https://learn.microsoft.com/en-gb/windows/win32/msi/localizing-the-error-and-actiontext-tables
 REM the codepage is the value of the "ASCII code page" in the table
 set languages=^
-1252:en-us de-de fr-fr it-it es-es
+1252:en-us
+REM de-de fr-fr it-it es-es
 
 set languages_to_id=^
-en-us:1033;^
-de-de:1031;^
-fr-fr:1036;^
-it-it:1040;^
-es-es:3082
+en-us:1033
+REM ;^
+REM de-de:1031;^
+REM fr-fr:1036;^
+REm it-it:1040;^
+REM es-es:3082
 
 set LF=^
 
