@@ -37,7 +37,7 @@ string(TIMESTAMP BUILD_TAG "%Y%m%d")
 # Define default suffixes if not set
 # ------------------------------------
 if(NOT DEFINED MIRALL_VERSION_SUFFIX)
-    set(MIRALL_VERSION_SUFFIX "daily")  # e.g. beta1, rc1, etc.
+    set(MIRALL_VERSION_SUFFIX "stable")  # e.g. beta1, rc1, etc.
 endif()
 
 if(NOT DEFINED MIRALL_VERSION_BUILD)
@@ -61,7 +61,7 @@ file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/version.txt)
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/version.txt
     "${MIRALL_VERSION_FULL}\n"
 	"${BUILD_TIMESTAMP}\n"
-	"Privata-${MIRALL_VERSION_FULL}-${MIRALL_VERSION_SUFFIX}-x64.msi\n"
+	"privata-${MIRALL_VERSION_FULL}-${MIRALL_VERSION_SUFFIX}-x64.msi\n"
 	"privata-${MIRALL_VERSION_FULL}-${MIRALL_VERSION_SUFFIX}-x64.AppImage\n"
 )
 # Decide human-readable version string
