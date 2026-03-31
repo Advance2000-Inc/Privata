@@ -194,6 +194,18 @@ convert.exe
 *state-*.png
 theme.qrc
 *.AppImage
+version.txt
+
+# Xcode Build Artifacts
+DerivedData
+
+moc_*.cpp.d
+autogen_*/*
+**/autogen_*/*
 
 # Swift Package Manager Build Artifacts
-.swiftpm_codeql_detected_source_root
+.swiftpm
+
+#qt creator artifacts
+.qtcreator
+.git
