@@ -4,7 +4,8 @@
 cmake_minimum_required(VERSION 3.16)
 cmake_policy(SET CMP0071 NEW) # Enable use of QtQuick compiler/generated code
 
-project(client)
+project(privata)
+set(CMAKE_AUTOMOC OFF)
 
 if(APPLE)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "13.0" CACHE STRING "Minimum OSX deployment version")

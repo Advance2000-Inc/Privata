@@ -27,7 +27,7 @@ NextcloudTheme::NextcloudTheme()
 
 QString NextcloudTheme::wizardUrlHint() const
 {
-    return QStringLiteral("https://try.nextcloud.com");
+    return QStringLiteral("Insert your server address here");
 }
 
 }

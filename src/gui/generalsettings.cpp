@@ -336,6 +336,10 @@ GeneralSettings::GeneralSettings(QWidget *parent)
 #endif
 
     customizeStyle();
+
+    _ui->debugArchiveButton->setVisible(false);
+    _ui->legalNoticeButton->setVisible(false);
+    _ui->usageDocumentationButton->setVisible(false);
 }
 
 GeneralSettings::~GeneralSettings()
