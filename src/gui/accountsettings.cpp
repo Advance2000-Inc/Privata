@@ -35,6 +35,7 @@
 #include "ignorelisttablewidget.h"
 #include "wizard/owncloudwizard.h"
 #include "networksettings.h"
+#include "drivemappingsettings.h"
 #include "ui_mnemonicdialog.h"
 
 #include <cmath>
@@ -218,6 +219,20 @@ AccountSettings::AccountSettings(AccountState *accountState, QWidget *parent)
     connectionSettingsLayout->setContentsMargins(0, 0, 0, 0);
     connectionSettingsLayout->addWidget(networkSettings);
     connectionSettingsTab->setLayout(connectionSettingsLayout);
+
+#ifdef Q_OS_WIN
+    const auto driveMappingTab = _ui->driveMappingTab;
+    const auto driveMappingLayout = new QVBoxLayout(driveMappingTab);
+    const auto driveMappingSettings = new DriveMappingSettings(_accountState, driveMappingTab);
+    driveMappingLayout->setContentsMargins(0, 0, 0, 0);
+    driveMappingLayout->addWidget(driveMappingSettings);
+    driveMappingTab->setLayout(driveMappingLayout);
+#else
+    const auto driveMappingTab = _ui->driveMappingTab;
+    if (const auto driveMappingTabIndex = _ui->tabWidget->indexOf(driveMappingTab); driveMappingTabIndex >= 0) {
+        _ui->tabWidget->removeTab(driveMappingTabIndex);
+    }
+#endif
 
     const auto mouseCursorChanger = new MouseCursorChanger(this);
     mouseCursorChanger->folderList = _ui->_folderList;

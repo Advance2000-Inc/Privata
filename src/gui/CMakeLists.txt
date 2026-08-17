@@ -79,6 +79,8 @@ set(client_SRCS
     conflictsolver.cpp
     connectionvalidator.h
     connectionvalidator.cpp
+    drivemappingsettings.h
+    drivemappingsettings.cpp
     editlocallyjob.h
     editlocallyjob.cpp
     editlocallymanager.h
@@ -359,6 +361,8 @@ IF( WIN32 )
         folderwatcher_win.cpp
         navigationpanehelper.h
         navigationpanehelper.cpp
+        drivemappingmanager.h
+        drivemappingmanager.cpp
         shellextensionsserver.cpp
         ${CMAKE_SOURCE_DIR}/src/common/shellextensionutils.cpp)
 ENDIF()

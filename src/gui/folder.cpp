@@ -259,6 +259,27 @@ void Folder::setIgnoreHiddenFiles(bool ignore)
     _definition.ignoreHiddenFiles = ignore;
 }
 
+void Folder::setDriveLetter(QChar letter)
+{
+    if (!letter.isNull())
+        letter = letter.toUpper();
+    if (_definition.driveLetter == letter)
+        return;
+
+#ifdef Q_OS_WIN
+    auto &mappingManager = FolderMan::instance()->driveMappingManager();
+    if (!_definition.driveLetter.isNull())
+        mappingManager.unmapLetter(_definition.driveLetter);
+    _definition.driveLetter = letter;
+    if (!letter.isNull())
+        mappingManager.mapFolder(this, letter);
+#else
+    _definition.driveLetter = letter;
+#endif
+
+    saveToSettings();
+}
+
 QString Folder::cleanPath() const
 {
     QString cleanedPath = QDir::cleanPath(_canonicalLocalPath);
@@ -1848,6 +1869,12 @@ void FolderDefinition::save(QSettings &settings, const FolderDefinition &folder)
         settings.setValue(QLatin1String("navigationPaneClsid"), folder.navigationPaneClsid);
     else
         settings.remove(QLatin1String("navigationPaneClsid"));
+
+    // Happens only on Windows when the folder is mapped to a drive letter.
+    if (!folder.driveLetter.isNull())
+        settings.setValue(QLatin1String("driveLetter"), QString(folder.driveLetter));
+    else
+        settings.remove(QLatin1String("driveLetter"));
 }
 
 bool FolderDefinition::load(QSettings &settings, const QString &alias,
@@ -1860,6 +1887,9 @@ bool FolderDefinition::load(QSettings &settings, const QString &alias,
     folder->paused = settings.value(QLatin1String("paused")).toBool();
     folder->ignoreHiddenFiles = settings.value(QLatin1String("ignoreHiddenFiles"), QVariant(true)).toBool();
     folder->navigationPaneClsid = settings.value(QLatin1String("navigationPaneClsid")).toUuid();
+
+    const auto driveLetterString = settings.value(QLatin1String("driveLetter")).toString();
+    folder->driveLetter = driveLetterString.isEmpty() ? QChar() : driveLetterString.at(0).toUpper();
 
     folder->virtualFilesMode = Vfs::Off;
     QString vfsModeString = settings.value(QStringLiteral("virtualFilesMode")).toString();
