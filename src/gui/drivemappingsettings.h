@@ -2,6 +2,12 @@
 
 #include <QWidget>
 
+#ifdef Q_OS_WIN
+#include "drivemappingmanager.h"
+
+#include <QPoint>
+#endif
+
 class QTableWidget;
 class QPushButton;
 
@@ -26,7 +32,12 @@ private slots:
 private:
 #ifdef Q_OS_WIN
     void buildRow(Folder *folder, int row);
+    void buildManualRow(const DriveMappingManager::ManualMapping &mapping, int row);
     void slotLetterChanged(Folder *folder, QChar letter);
+    void slotManualLetterChanged(const QString &localPath, QChar letter);
+    void slotAddManualMapping();
+    void slotRemoveManualMapping(const QString &localPath);
+    void slotShowContextMenu(const QPoint &pos);
     void slotMappingFailed(const QString &folderAlias, const QString &message);
     void slotRemoveAll();
 

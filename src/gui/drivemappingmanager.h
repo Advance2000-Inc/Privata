@@ -3,12 +3,14 @@
 #include <QChar>
 #include <QHash>
 #include <QObject>
+#include <QString>
 #include <QVector>
 
 namespace OCC {
 
 class FolderMan;
 class Folder;
+class AccountState;
 
 /**
  * @brief Maps synced folders to Windows drive letters.
@@ -21,6 +23,12 @@ class DriveMappingManager : public QObject
 {
     Q_OBJECT
 public:
+    struct ManualMapping
+    {
+        QString localPath;
+        QChar driveLetter;
+    };
+
     explicit DriveMappingManager(FolderMan *folderMan);
 
     /// Drive letters not currently used by a real drive, an existing substitution, or the system drive.
@@ -32,6 +40,11 @@ public:
     /// Removes the substitution for letter, but only if this manager created it.
     bool unmapLetter(QChar letter);
 
+    [[nodiscard]] QVector<ManualMapping> manualMappings(AccountState *accountState) const;
+    bool addManualMapping(AccountState *accountState, const QString &localPath);
+    bool removeManualMapping(AccountState *accountState, const QString &localPath);
+    bool setManualMappingDriveLetter(AccountState *accountState, const QString &localPath, QChar letter);
+
     /// Re-establishes all persisted mappings; called once after folders are loaded at startup.
     void applyAllMappings();
 
@@ -41,6 +54,8 @@ signals:
     void mappingsChanged();
 
 private:
+    void saveManualMappings(AccountState *accountState, const QVector<ManualMapping> &mappings) const;
+    bool mapPath(const QString &localPath, QChar letter, const QString &folderAlias = QString());
     [[nodiscard]] static bool letterInUse(QChar letter);
     [[nodiscard]] static bool substitutionTargets(QChar letter, const QString &localPath);
     [[nodiscard]] static bool createSubstitution(QChar letter, const QString &localPath, QString *error);
