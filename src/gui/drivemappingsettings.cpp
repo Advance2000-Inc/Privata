@@ -37,11 +37,6 @@ DriveMappingSettings::DriveMappingSettings(AccountState *accountState, QWidget *
     label->setWordWrap(true);
     layout->addWidget(label);
 #else
-    auto *info = new QLabel(tr("Map a synced folder to a drive letter so it appears like a local disk in File Explorer. "
-                                "Choose a drive letter for a folder, or \u201cNo drive\u201d to remove its mapping."), this);
-    info->setWordWrap(true);
-    layout->addWidget(info);
-
     auto *toolbarLayout = new QHBoxLayout;
 
     auto *addButton = new QPushButton(tr("Add"), this);
