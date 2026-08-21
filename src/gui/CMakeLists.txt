@@ -506,6 +506,10 @@ endif()
 
 ecm_add_app_icon(APP_ICON ICONS "${OWNCLOUD_ICONS}" SIDEBAR_ICONS "${OWNCLOUD_SIDEBAR_ICONS}" OUTFILE_BASENAME "${APPLICATION_ICON_NAME}")
 
+if(WIN32 AND BUILD_WIN_MSI)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_ICON_NAME}.ico" DESTINATION bin)
+endif()
+
 if(WIN32 AND EXISTS ${APP_ICON_WIN_FOLDER_SVG})
     get_filename_component(output_icon_name_win ${APP_ICON_WIN_FOLDER_SVG} NAME_WLE)
     # Product icon (for smallest size)

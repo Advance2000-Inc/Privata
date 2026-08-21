@@ -22,11 +22,13 @@ configure_file(RegistryCleanup.vbs.in ${CMAKE_CURRENT_BINARY_DIR}/RegistryCleanu
 configure_file(OEM.wxi.in ${CMAKE_CURRENT_BINARY_DIR}/OEM.wxi)
 configure_file(collect-transform.xsl.in ${CMAKE_CURRENT_BINARY_DIR}/collect-transform.xsl)
 configure_file(make-msi.bat.in ${CMAKE_CURRENT_BINARY_DIR}/make-msi.bat)
+configure_file(prepare-msi-staging.ps1 ${CMAKE_CURRENT_BINARY_DIR}/prepare-msi-staging.ps1)
 
 install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/OEM.wxi
         ${CMAKE_CURRENT_BINARY_DIR}/collect-transform.xsl
         ${CMAKE_CURRENT_BINARY_DIR}/make-msi.bat
+        ${CMAKE_CURRENT_BINARY_DIR}/prepare-msi-staging.ps1
         EnsureACL.js
         Platform.wxi
         Nextcloud.wxs
