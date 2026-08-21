@@ -79,6 +79,8 @@ set(client_SRCS
     conflictsolver.cpp
     connectionvalidator.h
     connectionvalidator.cpp
+    drivemappingsettings.h
+    drivemappingsettings.cpp
     editlocallyjob.h
     editlocallyjob.cpp
     editlocallymanager.h
@@ -359,6 +361,8 @@ IF( WIN32 )
         folderwatcher_win.cpp
         navigationpanehelper.h
         navigationpanehelper.cpp
+        drivemappingmanager.h
+        drivemappingmanager.cpp
         shellextensionsserver.cpp
         ${CMAKE_SOURCE_DIR}/src/common/shellextensionutils.cpp)
 ENDIF()
@@ -501,6 +505,10 @@ if(APPLE)
 endif()
 
 ecm_add_app_icon(APP_ICON ICONS "${OWNCLOUD_ICONS}" SIDEBAR_ICONS "${OWNCLOUD_SIDEBAR_ICONS}" OUTFILE_BASENAME "${APPLICATION_ICON_NAME}")
+
+if(WIN32 AND BUILD_WIN_MSI)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${APPLICATION_ICON_NAME}.ico" DESTINATION bin)
+endif()
 
 if(WIN32 AND EXISTS ${APP_ICON_WIN_FOLDER_SVG})
     get_filename_component(output_icon_name_win ${APP_ICON_WIN_FOLDER_SVG} NAME_WLE)

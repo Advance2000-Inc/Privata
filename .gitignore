@@ -15,6 +15,9 @@ admin/win/nsi/l10n/pofiles/*.po
 *.swo
 *~$
 build*
+!build-all.bat
+!build-project.bat
+!build-installer.bat
 cscope.*
 tags
 t1.cfg

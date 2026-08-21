@@ -56,6 +56,7 @@ FolderMan::FolderMan(QObject *parent)
     , _lockWatcher(new LockWatcher)
 #ifdef Q_OS_WIN
     , _navigationPaneHelper(this)
+    , _driveMappingManager(this)
 #endif
 {
     ASSERT(!_instance);
@@ -224,6 +225,10 @@ int FolderMan::setupFolders()
     for (const auto folder : std::as_const(_folderMap)) {
         folder->processSwitchedToVirtualFiles();
     }
+
+#ifdef Q_OS_WIN
+    _driveMappingManager.applyAllMappings();
+#endif
 
     return _folderMap.size();
 }
@@ -1421,6 +1426,12 @@ void FolderMan::removeFolder(Folder *folderToRemove)
 
     folderToRemove->setSyncPaused(true);
     folderToRemove->wipeForRemoval();
+
+#ifdef Q_OS_WIN
+    if (!folderToRemove->driveLetter().isNull()) {
+        _driveMappingManager.unmapLetter(folderToRemove->driveLetter());
+    }
+#endif
 
     // remove the folder configuration
     folderToRemove->removeFromSettings();

@@ -16,6 +16,7 @@
 #include "folderwatcher.h"
 #ifdef Q_OS_WIN
 #include "navigationpanehelper.h"
+#include "drivemappingmanager.h"
 #endif
 #include "syncfileitem.h"
 
@@ -147,6 +148,7 @@ public:
 
 #ifdef Q_OS_WIN
     NavigationPaneHelper &navigationPaneHelper() { return _navigationPaneHelper; }
+    DriveMappingManager &driveMappingManager() { return _driveMappingManager; }
 #endif
 
     /**
@@ -400,6 +402,7 @@ private:
     QScopedPointer<SocketApi> _socketApi;
 #ifdef Q_OS_WIN
     NavigationPaneHelper _navigationPaneHelper;
+    DriveMappingManager _driveMappingManager;
 #endif
 
     QPointer<UpdateE2eeFolderUsersMetadataJob> _removeE2eeShareJob;

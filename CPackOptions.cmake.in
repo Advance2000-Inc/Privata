@@ -9,6 +9,8 @@
 if(CPACK_GENERATOR MATCHES "NSIS")
     SET( CPACK_PACKAGE_ICON  @CMAKE_SOURCE_DIR@/admin/win/nsi/installer.ico ) #  A branding image that will be displayed on the top bar inside the installer.    installer.bmp
     SET( CPACK_NSIS_COMPRESSOR   "/SOLID lzma" ) # The arguments that will be passed to the NSIS SetCompressor command.    /SOLID lzma
+    # Set NSIS plugin directory to x86-unicode for modern NSIS installations
+    SET( CPACK_NSIS_PLUGIN_DIR "C:/Program Files (x86)/NSIS/Plugins/x86-unicode" )
 endif(CPACK_GENERATOR MATCHES "NSIS")
 
 set( CMAKE_SOURCE_DIR  @CMAKE_SOURCE_DIR@ )

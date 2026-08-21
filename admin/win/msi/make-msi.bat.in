@@ -3,6 +3,17 @@ REM SPDX-FileCopyrightText: 2020 Nextcloud GmbH and Nextcloud contributors
 REM SPDX-License-Identifier: GPL-2.0-or-later
 set HarvestAppDir=%~1
 set BuildArch=@MSI_BUILD_ARCH@
+set StagingDir=%TEMP%\@APPLICATION_EXECUTABLE@-msi-%RANDOM%
+
+if "%HarvestAppDir%" == "" (
+  echo "Missing parameter: Please specify the installed application directory."
+  exit 1
+)
+
+echo :: Preparing MSI staging directory
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0prepare-msi-staging.ps1" "%HarvestAppDir%" "%StagingDir%"
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
+set HarvestAppDir=%StagingDir%
 
 setlocal EnableDelayedExpansion
 
@@ -35,11 +46,6 @@ REM do NOT delete the two lines above!  !LF! will contain a single newline in th
 REM will be used to replace the ; from the languages list with the newline in order to make
 REM Batch's FOR loop happy...
 
-if "%HarvestAppDir%" == "" (
-  echo "Missing parameter: Please specify file collection source path (HarvestAppDir)."
-  exit 1
-)
-
 if "%WIX%" == "" (
   echo "WiX Toolset path not set (environment variable 'WIX'). Please install the WiX Toolset."
   exit 1
@@ -58,7 +64,12 @@ if "%WISUBSTG%" == "" (
 REM generate a ProductCode to use in the resulting MSI to ensure that the embedded
 REM transforms don't break managed deployments (see #8610)
 REM the uuidgen tool is provided by the Visual Studio CLI tools
-for /f %%i in ('uuidgen -c') do set PRODUCTCODE=%%i
+where uuidgen >nul 2>&1
+if %ERRORLEVEL% equ 0 (
+  for /f %%i in ('uuidgen -c') do set PRODUCTCODE=%%i
+) else (
+  for /f %%i in ('powershell.exe -NoProfile -Command "[guid]::NewGuid().ToString().ToUpper()"') do set PRODUCTCODE=%%i
+)
 echo/
 echo :: Using ProductCode=%PRODUCTCODE%
 
@@ -89,9 +100,12 @@ if NOT "%WILANGID%" == "" (
 
 REM rename the en-US installer to a non-prefixed file name
 echo :: Finalising MSI build
+if exist "@MSI_INSTALLER_FILENAME@" del /q "@MSI_INSTALLER_FILENAME@"
 rename "en-us_@MSI_INSTALLER_FILENAME@" "@MSI_INSTALLER_FILENAME@"
+if %ERRORLEVEL% neq 0 exit %ERRORLEVEL%
 echo/
 
+rd /s /q "%StagingDir%"
 echo :: Done
 exit 0
 

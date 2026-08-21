@@ -13,6 +13,7 @@
 #include "networkjobs.h"
 #include "syncoptions.h"
 
+#include <QChar>
 #include <QObject>
 #include <QStringList>
 #include <QUuid>
@@ -57,6 +58,9 @@ public:
     Vfs::Mode virtualFilesMode = Vfs::Off;
     /// The CLSID where this folder appears in registry for the Explorer navigation pane entry.
     QUuid navigationPaneClsid;
+
+    /// Windows drive letter this folder is substituted to, or a null QChar if none (Windows only).
+    QChar driveLetter;
 
     /// Whether the vfs mode shall silently be updated if possible
     bool upgradeVfsMode = false;
@@ -174,6 +178,13 @@ public:
 
     void setNavigationPaneClsid(const QUuid &clsid) { _definition.navigationPaneClsid = clsid; }
     [[nodiscard]] QUuid navigationPaneClsid() const { return _definition.navigationPaneClsid; }
+
+    /** Enables or disables the Windows drive letter substitution for this folder (Windows only).
+     *
+     * Applies (or removes) the mapping immediately and persists the setting.
+     */
+    void setDriveLetter(QChar letter);
+    [[nodiscard]] QChar driveLetter() const { return _definition.driveLetter; }
 
     /**
      * remote folder path with server url
