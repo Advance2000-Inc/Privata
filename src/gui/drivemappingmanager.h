@@ -81,7 +81,7 @@ private:
     [[nodiscard]] QVector<PolicyMapping> cachedPolicyMappings(AccountState *accountState) const;
     [[nodiscard]] bool resolvePolicyMapping(AccountState *accountState, PolicyMapping *mapping) const;
     [[nodiscard]] static QString policyKey(const QString &folderId, QChar letter);
-    bool mapPath(const QString &localPath, QChar letter, const QString &folderAlias = QString());
+    bool mapPath(const QString &localPath, QChar letter, const QString &folderAlias = QString(), bool adoptExistingMapping = true);
     [[nodiscard]] static bool letterInUse(QChar letter);
     [[nodiscard]] static bool substitutionTargets(QChar letter, const QString &localPath);
     [[nodiscard]] static bool createSubstitution(QChar letter, const QString &localPath, QString *error);

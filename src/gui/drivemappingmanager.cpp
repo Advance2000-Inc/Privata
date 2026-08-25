@@ -66,16 +66,20 @@ QString mappingKeyForPolicy(const QString &folderId, QChar letter)
     return QString::fromUtf8(key.toUtf8().toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals));
 }
 
+QString normalizedRelativeHint(const QString &relativePathHint)
+{
+    auto hint = QDir::fromNativeSeparators(relativePathHint);
+    while (hint.startsWith(QLatin1Char('/')))
+        hint.remove(0, 1);
+    return QDir::cleanPath(hint);
+}
+
 QString relativeHintToLocalPath(Folder *folder, const QString &relativePathHint)
 {
     if (!folder || relativePathHint.isEmpty())
         return QString();
 
-    auto hint = QDir::fromNativeSeparators(relativePathHint);
-    while (hint.startsWith(QLatin1Char('/')))
-        hint.remove(0, 1);
-
-    return canonicalPath(QDir(folder->path()).filePath(hint));
+    return canonicalPath(QDir(folder->path()).filePath(normalizedRelativeHint(relativePathHint)));
 }
 
 QVector<DriveMappingManager::PolicyMapping> parsePolicyMappings(const QJsonDocument &doc)
@@ -255,7 +259,7 @@ bool DriveMappingManager::mapFolder(Folder *folder, QChar letter)
     return mapPath(folder->path(), letter, folder->alias());
 }
 
-bool DriveMappingManager::mapPath(const QString &localPath, QChar letter, const QString &folderAlias)
+bool DriveMappingManager::mapPath(const QString &localPath, QChar letter, const QString &folderAlias, bool adoptExistingMapping)
 {
     if (letter.isNull())
         return false;
@@ -265,6 +269,11 @@ bool DriveMappingManager::mapPath(const QString &localPath, QChar letter, const 
 
     // Already correctly mapped, whether by us in this session or from before: nothing to do.
     if (substitutionTargets(letter, path)) {
+        if (!adoptExistingMapping) {
+            qCWarning(lcDriveMappingManager) << "Drive letter" << letter << "already points to" << path << "but was not created by policy; refusing to adopt it";
+            emit mappingFailed(folderAlias, tr("Drive letter %1 is already mapped outside administrator policy.").arg(driveSpec(letter)));
+            return false;
+        }
         _ownedMappings.insert(letter, path);
         return true;
     }
@@ -485,6 +494,8 @@ bool DriveMappingManager::resolvePolicyMapping(AccountState *accountState, Polic
         }
     }
 
+    QString firstMissingHintPath;
+    auto hintExcluded = false;
     for (auto *folder : folders) {
         if (folder->accountState() != accountState)
             continue;
@@ -492,11 +503,27 @@ bool DriveMappingManager::resolvePolicyMapping(AccountState *accountState, Polic
         if (hintedPath.isEmpty())
             continue;
         mapping->localPath = hintedPath;
-        mapping->resolved = QDir(hintedPath).exists();
-        mapping->status = mapping->resolved
-            ? tr("Resolved from relative path hint %1.").arg(mapping->relativePathHint)
-            : tr("The policy target %1 is excluded from synchronization or is not present locally.").arg(mapping->folderPath);
-        return mapping->resolved;
+        if (QDir(hintedPath).exists()) {
+            mapping->resolved = true;
+            mapping->status = tr("Resolved from relative path hint %1.").arg(mapping->relativePathHint);
+            return true;
+        }
+
+        if (firstMissingHintPath.isEmpty())
+            firstMissingHintPath = hintedPath;
+
+        bool selectiveSyncListRead = false;
+        const auto selectiveSyncBlackList = folder->journalDb()->getSelectiveSyncList(SyncJournalDb::SelectiveSyncBlackList, &selectiveSyncListRead);
+        if (selectiveSyncListRead && SyncJournalDb::findPathInSelectiveSyncList(selectiveSyncBlackList, normalizedRelativeHint(mapping->relativePathHint)))
+            hintExcluded = true;
+    }
+
+    if (!firstMissingHintPath.isEmpty()) {
+        mapping->localPath = firstMissingHintPath;
+        mapping->status = hintExcluded
+            ? tr("The policy target %1 is excluded from synchronization.").arg(mapping->folderPath)
+            : tr("The policy target %1 is not present locally at %2.").arg(mapping->folderPath, QDir::toNativeSeparators(firstMissingHintPath));
+        return false;
     }
 
     mapping->status = tr("No configured folder can resolve policy target %1.").arg(mapping->folderPath);
@@ -542,7 +569,7 @@ void DriveMappingManager::applyPolicyMappings(AccountState *accountState, QVecto
         }
 
         qCInfo(lcDriveMappingManager) << "Applying" << enforcement << "policy drive mapping" << mapping.driveLetter << mapping.folderId << "from" << source << "to" << mapping.localPath;
-        if (!mapPath(mapping.localPath, mapping.driveLetter, mapping.folderPath))
+        if (!mapPath(mapping.localPath, mapping.driveLetter, mapping.folderPath, !previousPath.isEmpty()))
             continue;
 
         settings->beginGroup(key);
