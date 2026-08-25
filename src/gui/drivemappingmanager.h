@@ -3,7 +3,10 @@
 #include <QChar>
 #include <QHash>
 #include <QObject>
+#include <QPointer>
+#include <QSet>
 #include <QString>
+#include <QTimer>
 #include <QVector>
 
 namespace OCC {
@@ -11,6 +14,7 @@ namespace OCC {
 class FolderMan;
 class Folder;
 class AccountState;
+class JsonApiJob;
 
 /**
  * @brief Maps synced folders to Windows drive letters.
@@ -29,6 +33,19 @@ public:
         QChar driveLetter;
     };
 
+    struct PolicyMapping
+    {
+        QString folderId;
+        QString folderPath;
+        QString relativePathHint;
+        QString localPath;
+        QChar driveLetter;
+        QString enforcement;
+        QString status;
+        bool resolved = false;
+        bool suppressed = false;
+    };
+
     explicit DriveMappingManager(FolderMan *folderMan);
 
     /// Drive letters not currently used by a real drive, an existing substitution, or the system drive.
@@ -41,9 +58,11 @@ public:
     bool unmapLetter(QChar letter);
 
     [[nodiscard]] QVector<ManualMapping> manualMappings(AccountState *accountState) const;
+    [[nodiscard]] QVector<PolicyMapping> policyMappings(AccountState *accountState) const;
     bool addManualMapping(AccountState *accountState, const QString &localPath);
     bool removeManualMapping(AccountState *accountState, const QString &localPath);
     bool setManualMappingDriveLetter(AccountState *accountState, const QString &localPath, QChar letter);
+    bool removeSuggestedPolicyMapping(AccountState *accountState, const QString &folderId, QChar letter);
 
     /// Re-establishes all persisted mappings; called once after folders are loaded at startup.
     void applyAllMappings();
@@ -54,7 +73,14 @@ signals:
     void mappingsChanged();
 
 private:
+    void registerPolicyAccount(AccountState *accountState);
+    void fetchPolicyMappings(AccountState *accountState);
+    void applyCachedPolicyMappings(AccountState *accountState);
+    void applyPolicyMappings(AccountState *accountState, QVector<PolicyMapping> mappings, const QString &source);
     void saveManualMappings(AccountState *accountState, const QVector<ManualMapping> &mappings) const;
+    [[nodiscard]] QVector<PolicyMapping> cachedPolicyMappings(AccountState *accountState) const;
+    [[nodiscard]] bool resolvePolicyMapping(AccountState *accountState, PolicyMapping *mapping) const;
+    [[nodiscard]] static QString policyKey(const QString &folderId, QChar letter);
     bool mapPath(const QString &localPath, QChar letter, const QString &folderAlias = QString());
     [[nodiscard]] static bool letterInUse(QChar letter);
     [[nodiscard]] static bool substitutionTargets(QChar letter, const QString &localPath);
@@ -64,6 +90,9 @@ private:
     FolderMan *_folderMan;
     /// Letters this manager created, mapped to the local path they point at.
     QHash<QChar, QString> _ownedMappings;
+    QHash<AccountState *, QPointer<JsonApiJob>> _policyJobs;
+    QSet<AccountState *> _registeredPolicyAccounts;
+    QTimer _policyRefreshTimer;
 };
 
 } // namespace OCC

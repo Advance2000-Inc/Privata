@@ -22,6 +22,15 @@
 #include <QTableWidgetItem>
 
 #include <algorithm>
+
+namespace {
+constexpr int rowKindRole = Qt::UserRole + 1;
+constexpr int driveLetterRole = Qt::UserRole + 2;
+constexpr int enforcementRole = Qt::UserRole + 3;
+constexpr auto manualRowKindC = "manual";
+constexpr auto policyRowKindC = "policy";
+constexpr auto enforcedC = "enforced";
+}
 #endif
 
 namespace OCC {
@@ -90,6 +99,12 @@ void DriveMappingSettings::refresh()
         anyMapped = anyMapped || !folder->driveLetter().isNull();
         ++row;
     }
+    const auto policyMappings = FolderMan::instance()->driveMappingManager().policyMappings(_accountState);
+    for (const auto &mapping : policyMappings) {
+        _table->insertRow(row);
+        buildPolicyRow(mapping, row);
+        ++row;
+    }
     const auto manualMappings = FolderMan::instance()->driveMappingManager().manualMappings(_accountState);
     for (const auto &mapping : manualMappings) {
         _table->insertRow(row);
@@ -130,6 +145,7 @@ void DriveMappingSettings::buildManualRow(const DriveMappingManager::ManualMappi
     _table->setItem(row, 0, new QTableWidgetItem(tr("Manual mapping")));
     auto *pathItem = new QTableWidgetItem(QDir::toNativeSeparators(mapping.localPath));
     pathItem->setData(Qt::UserRole, mapping.localPath);
+    pathItem->setData(rowKindRole, QLatin1String(manualRowKindC));
     _table->setItem(row, 1, pathItem);
 
     auto *combo = new QComboBox(this);
@@ -144,6 +160,31 @@ void DriveMappingSettings::buildManualRow(const DriveMappingManager::ManualMappi
     connect(combo, &QComboBox::currentIndexChanged, this, [this, path = mapping.localPath, combo](int index) {
         slotManualLetterChanged(path, combo->itemData(index).toChar());
     });
+    _table->setCellWidget(row, 2, combo);
+}
+
+void DriveMappingSettings::buildPolicyRow(const DriveMappingManager::PolicyMapping &mapping, int row)
+{
+    const auto enforcement = mapping.enforcement.isEmpty() ? tr("suggested") : mapping.enforcement;
+    _table->setItem(row, 0, new QTableWidgetItem(tr("Administrator policy (%1)").arg(enforcement)));
+
+    const auto pathText = mapping.resolved
+        ? QDir::toNativeSeparators(mapping.localPath)
+        : mapping.status;
+    auto *pathItem = new QTableWidgetItem(pathText);
+    pathItem->setData(Qt::UserRole, mapping.folderId);
+    pathItem->setData(rowKindRole, QLatin1String(policyRowKindC));
+    pathItem->setData(driveLetterRole, QString(mapping.driveLetter));
+    pathItem->setData(enforcementRole, mapping.enforcement);
+    _table->setItem(row, 1, pathItem);
+
+    auto *combo = new QComboBox(this);
+    combo->addItem(mapping.driveLetter.isNull() ? tr("No drive") : QStringLiteral("%1:").arg(mapping.driveLetter), QVariant::fromValue(mapping.driveLetter));
+    combo->setCurrentIndex(0);
+    combo->setEnabled(false);
+    combo->setToolTip(mapping.enforcement == QLatin1String(enforcedC)
+            ? tr("This drive mapping is enforced by administrator policy.")
+            : tr("This drive mapping was suggested by administrator policy."));
     _table->setCellWidget(row, 2, combo);
 }
 
@@ -184,6 +225,12 @@ void DriveMappingSettings::slotRemoveManualMapping(const QString &localPath)
     refresh();
 }
 
+void DriveMappingSettings::slotRemoveSuggestedPolicyMapping(const QString &folderId, QChar letter)
+{
+    FolderMan::instance()->driveMappingManager().removeSuggestedPolicyMapping(_accountState, folderId, letter);
+    refresh();
+}
+
 void DriveMappingSettings::slotShowContextMenu(const QPoint &pos)
 {
     const auto index = _table->indexAt(pos);
@@ -195,13 +242,29 @@ void DriveMappingSettings::slotShowContextMenu(const QPoint &pos)
         return;
 
     const auto localPath = pathItem->data(Qt::UserRole).toString();
-    if (localPath.isEmpty())
+    const auto rowKind = pathItem->data(rowKindRole).toString();
+    if (localPath.isEmpty() && rowKind != QLatin1String(policyRowKindC))
         return;
 
     QMenu menu(this);
-    menu.addAction(tr("Remove"), this, [this, localPath] {
-        slotRemoveManualMapping(localPath);
-    });
+    if (rowKind == QLatin1String(manualRowKindC)) {
+        menu.addAction(tr("Remove"), this, [this, localPath] {
+            slotRemoveManualMapping(localPath);
+        });
+    } else if (rowKind == QLatin1String(policyRowKindC)) {
+        const auto folderId = pathItem->data(Qt::UserRole).toString();
+        const auto driveLetterString = pathItem->data(driveLetterRole).toString();
+        const auto driveLetter = driveLetterString.isEmpty() ? QChar() : driveLetterString.at(0);
+        const auto enforcement = pathItem->data(enforcementRole).toString();
+        menu.addAction(tr("Why can't I change this?"), this, [this] {
+            QMessageBox::information(this, tr("Drive mapping"), tr("This drive mapping comes from administrator policy. Enforced mappings cannot be renamed, remapped, or deleted from the client."));
+        });
+        if (enforcement != QLatin1String(enforcedC)) {
+            menu.addAction(tr("Remove suggested mapping"), this, [this, folderId, driveLetter] {
+                slotRemoveSuggestedPolicyMapping(folderId, driveLetter);
+            });
+        }
+    }
     menu.exec(_table->viewport()->mapToGlobal(pos));
 }
 
