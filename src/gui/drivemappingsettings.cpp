@@ -225,12 +225,6 @@ void DriveMappingSettings::slotRemoveManualMapping(const QString &localPath)
     refresh();
 }
 
-void DriveMappingSettings::slotRemoveSuggestedPolicyMapping(const QString &folderId, QChar letter)
-{
-    FolderMan::instance()->driveMappingManager().removeSuggestedPolicyMapping(_accountState, folderId, letter);
-    refresh();
-}
-
 void DriveMappingSettings::slotShowContextMenu(const QPoint &pos)
 {
     const auto index = _table->indexAt(pos);
@@ -259,11 +253,6 @@ void DriveMappingSettings::slotShowContextMenu(const QPoint &pos)
         menu.addAction(tr("Why can't I change this?"), this, [this] {
             QMessageBox::information(this, tr("Drive mapping"), tr("This drive mapping comes from administrator policy. Enforced mappings cannot be renamed, remapped, or deleted from the client."));
         });
-        if (enforcement != QLatin1String(enforcedC)) {
-            menu.addAction(tr("Remove suggested mapping"), this, [this, folderId, driveLetter] {
-                slotRemoveSuggestedPolicyMapping(folderId, driveLetter);
-            });
-        }
     }
     menu.exec(_table->viewport()->mapToGlobal(pos));
 }
