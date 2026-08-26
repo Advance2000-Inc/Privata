@@ -54,6 +54,8 @@ public:
 
     void setLogFlush(bool flush);
 
+    void logToFile(const QString &baseFileName, const QString &message);
+
     bool logDebug() const { return _logDebug; }
     void setLogDebug(bool debug);
 
@@ -110,6 +112,7 @@ private:
     QString _logDirectory;
     bool _temporaryFolderLogDir = false;
     QSet<QString> _logRules;
+    QHash<QString, QString> _additionalLogFiles;
     QVector<QString> _crashLog;
     int _crashLogIndex = 0;
     QFile _permanentDeleteLogFile;

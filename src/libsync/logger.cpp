@@ -9,6 +9,7 @@
 #include "config.h"
 
 #include <QDir>
+#include <QHash>
 #include <QRegularExpression>
 #include <QStringList>
 #include <QtGlobal>
@@ -57,6 +58,49 @@ static bool compressLog(const QString &originalName, const QString &targetName)
 #else
     return false;
 #endif
+}
+
+static QString nextAdditionalLogFile(const QString &directory, const QString &baseFileName, int logExpire, const QString &previousLog)
+{
+    QDir dir(directory);
+    if (!dir.exists() && !dir.mkpath(QStringLiteral(".")))
+        return QString();
+
+    const auto now = QDateTime::currentDateTime();
+    const auto cLocale = QLocale::c();
+    QString newLogName = cLocale.toString(now, QStringLiteral("yyyyMMdd_HHmm")) + QStringLiteral("_%1").arg(baseFileName);
+    const auto files = dir.entryList({QStringLiteral("*%1").arg(baseFileName), QStringLiteral("*%1.*").arg(baseFileName)}, QDir::Files, QDir::Name);
+    for (const auto &fileName : files) {
+        if (logExpire > 0 && QFileInfo(dir.absoluteFilePath(fileName)).lastModified().addSecs(60 * 60 * logExpire) < now)
+            dir.remove(fileName);
+    }
+
+    const auto collisionPattern = QRegularExpression::anchoredPattern(
+        QStringLiteral("%1\\\\.(\\\\d+).*" ).arg(QRegularExpression::escape(newLogName)));
+    const QRegularExpression collisionRegex(collisionPattern);
+    int maxNumber = -1;
+    for (const auto &fileName : dir.entryList({QStringLiteral("%1.*").arg(newLogName)}, QDir::Files, QDir::Name)) {
+        const auto match = collisionRegex.match(fileName);
+        if (match.hasMatch())
+            maxNumber = qMax(maxNumber, match.captured(1).toInt());
+    }
+    newLogName.append(QStringLiteral(".") + QString::number(maxNumber + 1));
+
+    auto logToCompress = previousLog;
+    if (logToCompress.isEmpty()) {
+        for (const auto &fileName : files) {
+            if (!fileName.endsWith(QStringLiteral(".gz")))
+                logToCompress = dir.absoluteFilePath(fileName);
+        }
+    }
+    if (!logToCompress.isEmpty()) {
+        const auto compressedName = logToCompress + QStringLiteral(".gz");
+        if (compressLog(logToCompress, compressedName))
+            QFile::remove(logToCompress);
+        else
+            QFile::remove(compressedName);
+    }
+    return dir.filePath(newLogName);
 }
 
 }
@@ -215,6 +259,25 @@ void Logger::setLogDir(const QString &dir)
 void Logger::setLogFlush(bool flush)
 {
     _doFileFlush = flush;
+}
+
+void Logger::logToFile(const QString &baseFileName, const QString &message)
+{
+    QMutexLocker locker(&_mutex);
+    auto logFileName = _additionalLogFiles.value(baseFileName);
+    if (logFileName.isEmpty()) {
+        logFileName = nextAdditionalLogFile(_logDirectory, baseFileName, _logExpire, QString());
+        if (logFileName.isEmpty())
+            return;
+        _additionalLogFiles.insert(baseFileName, logFileName);
+    }
+
+    QFile logFile(logFileName);
+    if (!logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
+        return;
+
+    QTextStream stream(&logFile);
+    stream << QDateTime::currentDateTime().toString(Qt::ISODateWithMs) << QLatin1Char(' ') << message << Qt::endl;
 }
 
 void Logger::setLogDebug(bool debug)

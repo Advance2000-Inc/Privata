@@ -5,11 +5,10 @@
 #include "common/syncjournalfilerecord.h"
 #include "folder.h"
 #include "folderman.h"
+#include "logger.h"
 #include "networkjobs.h"
 
 #include <QDir>
-#include <QDateTime>
-#include <QFile>
 #include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
@@ -17,7 +16,6 @@
 #include <QLoggingCategory>
 #include <QSettings>
 #include <QByteArray>
-#include <QTextStream>
 
 #include <windows.h>
 
@@ -116,33 +114,8 @@ void logPolicyMappingsJson(const QString &source, AccountState *accountState, co
         << QStringLiteral("Incoming policy drive mapping JSON from %1 for %2: %3")
                .arg(source, accountName, compactJson);
 
-    auto logDirectoryPath = QString();
-    if (accountState) {
-        const auto settings = accountState->settings();
-        logDirectoryPath = QFileInfo(settings->fileName()).absoluteDir().filePath(QStringLiteral("logs"));
-    }
-    if (logDirectoryPath.isEmpty())
-        logDirectoryPath = QDir::tempPath();
-
-    QDir logDirectory(logDirectoryPath);
-    if (!logDirectory.exists() && !logDirectory.mkpath(QStringLiteral("."))) {
-        qCWarning(lcDriveMappingManager) << "Could not create policy drive mapping log directory" << logDirectoryPath;
-        return;
-    }
-
-    QFile logFile(logDirectory.filePath(QStringLiteral("drive-mapping-policies.log")));
-    if (!logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
-        qCWarning(lcDriveMappingManager) << "Could not open policy drive mapping log file" << logFile.fileName() << logFile.errorString();
-        return;
-    }
-
-    QTextStream stream(&logFile);
-    stream << QDateTime::currentDateTime().toString(Qt::ISODateWithMs)
-           << " source=" << source
-           << " account=" << accountName
-           << " json=" << compactJson
-           << Qt::endl;
-    logFile.close();
+    Logger::instance()->logToFile(QStringLiteral("drive-mapping-policies.log"),
+        QStringLiteral("source=%1 account=%2 json=%3").arg(source, accountName, compactJson));
 }
 
 // Helper to log resolution/mapping details to file
@@ -151,23 +124,7 @@ void logPolicyDiagnostic(AccountState *accountState, const QString &message)
     if (!accountState)
         return;
 
-    auto logDirectoryPath = QString();
-    const auto settings = accountState->settings();
-    logDirectoryPath = QFileInfo(settings->fileName()).absoluteDir().filePath(QStringLiteral("logs"));
-    if (logDirectoryPath.isEmpty())
-        logDirectoryPath = QDir::tempPath();
-
-    QDir logDirectory(logDirectoryPath);
-    if (!logDirectory.exists())
-        return;
-
-    QFile logFile(logDirectory.filePath(QStringLiteral("drive-mapping-policies.log")));
-    if (!logFile.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text))
-        return;
-
-    QTextStream stream(&logFile);
-    stream << QDateTime::currentDateTime().toString(Qt::ISODateWithMs) << " " << message << Qt::endl;
-    logFile.close();
+    Logger::instance()->logToFile(QStringLiteral("drive-mapping-policies.log"), message);
 }
 
 // Returns the raw device string QueryDosDevice reports for a drive letter, or an empty string.
