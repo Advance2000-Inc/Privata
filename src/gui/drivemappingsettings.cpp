@@ -53,7 +53,7 @@ DriveMappingSettings::DriveMappingSettings(AccountState *accountState, QWidget *
     toolbarLayout->addWidget(addButton);
 
     auto *refreshButton = new QPushButton(tr("Refresh"), this);
-    connect(refreshButton, &QPushButton::clicked, this, &DriveMappingSettings::refresh);
+    connect(refreshButton, &QPushButton::clicked, this, &DriveMappingSettings::slotForceRefresh);
     toolbarLayout->addWidget(refreshButton);
 
     _removeAllButton = new QPushButton(tr("Remove all mappings"), this);
@@ -81,7 +81,17 @@ DriveMappingSettings::DriveMappingSettings(AccountState *accountState, QWidget *
         this, &DriveMappingSettings::refresh);
 
     refresh();
+    // Pick up any policy changes made on the server since this tab was last shown, rather than the stale cache.
+    FolderMan::instance()->driveMappingManager().refreshPolicyMappings(_accountState);
 #endif
+}
+
+void DriveMappingSettings::slotForceRefresh()
+{
+#ifdef Q_OS_WIN
+    FolderMan::instance()->driveMappingManager().refreshPolicyMappings(_accountState);
+#endif
+    refresh();
 }
 
 void DriveMappingSettings::refresh()

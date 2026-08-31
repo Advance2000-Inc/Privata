@@ -67,6 +67,9 @@ public:
     /// Re-establishes all persisted mappings; called once after folders are loaded at startup.
     void applyAllMappings();
 
+    /// Forces an immediate re-fetch of policy drive mappings from the server for accountState (or all accounts if null).
+    void refreshPolicyMappings(AccountState *accountState = nullptr);
+
 signals:
     /// Emitted when a mapping could not be created or removed; message is user-facing.
     void mappingFailed(const QString &folderAlias, const QString &message);

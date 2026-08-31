@@ -155,7 +155,7 @@ DriveMappingManager::DriveMappingManager(FolderMan *folderMan)
         }
     };
 
-    _policyRefreshTimer.setInterval(std::chrono::minutes(30));
+    _policyRefreshTimer.setInterval(std::chrono::minutes(5));
     connect(&_policyRefreshTimer, &QTimer::timeout, this, [refreshPolicyAccounts] {
         refreshPolicyAccounts(QStringLiteral("timer"));
     });
@@ -824,6 +824,20 @@ void DriveMappingManager::applyAllMappings()
         applyCachedPolicyMappings(account.data());
         fetchPolicyMappings(account.data());
     }
+}
+
+void DriveMappingManager::refreshPolicyMappings(AccountState *accountState)
+{
+    if (accountState) {
+        qCInfo(lcDriveMappingManager) << "Forcing policy drive mapping refresh for" << (accountState->account() ? accountState->account()->displayName() : QStringLiteral("unknown account"));
+        fetchPolicyMappings(accountState);
+        return;
+    }
+
+    const auto accounts = AccountManager::instance()->accounts();
+    qCInfo(lcDriveMappingManager) << "Forcing policy drive mapping refresh for all accounts" << "accountCount" << accounts.size();
+    for (const auto &account : accounts)
+        fetchPolicyMappings(account.data());
 }
 
 } // namespace OCC

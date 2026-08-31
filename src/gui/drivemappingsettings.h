@@ -28,6 +28,7 @@ public:
 
 private slots:
     void refresh();
+    void slotForceRefresh();
 
 private:
 #ifdef Q_OS_WIN
