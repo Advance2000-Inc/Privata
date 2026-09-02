@@ -11,6 +11,7 @@
 #include "drivemappingmanager.h"
 
 #include <QComboBox>
+#include <QColor>
 #include <QDir>
 #include <QFileDialog>
 #include <QHBoxLayout>
@@ -189,8 +190,11 @@ void DriveMappingSettings::buildPolicyRow(const DriveMappingManager::PolicyMappi
 
     const auto pathText = mapping.resolved
         ? QDir::toNativeSeparators(mapping.localPath)
-        : mapping.status;
+        : tr("The folder is not present locally.");
     auto *pathItem = new QTableWidgetItem(pathText);
+    if (!mapping.resolved) {
+        pathItem->setBackground(QColor(255, 128, 128, 128));
+    }
     pathItem->setData(Qt::UserRole, mapping.folderId);
     pathItem->setData(rowKindRole, QLatin1String(policyRowKindC));
     pathItem->setData(driveLetterRole, QString(mapping.driveLetter));
