@@ -601,7 +601,6 @@ void DriveMappingManager::applyPolicyMappings(AccountState *accountState, QVecto
         if (!resolvePolicyMapping(accountState, &mapping)) {
             logPolicyDiagnostic(accountState, QStringLiteral("  %1 RESOLVE_FAILED: %2").arg(mapping.driveLetter, mapping.status));
             qCWarning(lcDriveMappingManager) << "Policy drive mapping" << mapping.driveLetter << mapping.folderId << "not applied (resolution failed):" << mapping.status;
-            emit mappingFailed(mapping.folderPath, mapping.status);
             continue;
         }
 
