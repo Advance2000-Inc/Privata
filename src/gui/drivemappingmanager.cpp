@@ -80,6 +80,21 @@ QString relativeHintToLocalPath(Folder *folder, const QString &relativePathHint)
     return canonicalPath(QDir(folder->path()).filePath(normalizedRelativeHint(relativePathHint)));
 }
 
+// The policy folder_path is the full remote path within the account (which may include
+// parent folders not reflected in the relative_path_hint, e.g. "/Folders to be mapped/Foo").
+// Resolve it relative to this folder's synced remote root so nested folders are found.
+QString folderPathToLocalPath(Folder *folder, const QString &folderPath)
+{
+    if (!folder || folderPath.isEmpty())
+        return QString();
+
+    const auto relativeToSyncRoot = folder->fulllRemotePathToPathInSyncJournalDb(folderPath);
+    if (relativeToSyncRoot.isEmpty())
+        return QString();
+
+    return canonicalPath(QDir(folder->path()).filePath(relativeToSyncRoot));
+}
+
 QVector<DriveMappingManager::PolicyMapping> parsePolicyMappings(const QJsonDocument &doc)
 {
     QVector<DriveMappingManager::PolicyMapping> result;
@@ -504,26 +519,40 @@ bool DriveMappingManager::resolvePolicyMapping(AccountState *accountState, Polic
     for (auto *folder : folders) {
         if (folder->accountState() != accountState)
             continue;
+
+        // Try the full remote folder path first (correctly locates folders nested under
+        // parent directories that aren't part of the relative_path_hint), then fall back
+        // to the flat hint-only path for backwards compatibility.
+        QVector<QString> candidatePaths;
+        const auto folderPathCandidate = folderPathToLocalPath(folder, mapping->folderPath);
+        if (!folderPathCandidate.isEmpty())
+            candidatePaths.append(folderPathCandidate);
         const auto hintedPath = relativeHintToLocalPath(folder, mapping->relativePathHint);
-        if (hintedPath.isEmpty()) {
+        if (!hintedPath.isEmpty() && !candidatePaths.contains(hintedPath))
+            candidatePaths.append(hintedPath);
+
+        if (candidatePaths.isEmpty()) {
             qCInfo(lcDriveMappingManager) << "    Folder" << folder->alias() << "produced empty hint path";
             continue;
         }
-        logPolicyDiagnostic(accountState, QStringLiteral("  Checking hint path '%1'").arg(hintedPath));
-        qCInfo(lcDriveMappingManager) << "    Checking hint path:" << hintedPath;
-        mapping->localPath = hintedPath;
-        if (QDir(hintedPath).exists()) {
-            mapping->resolved = true;
-            mapping->status = tr("Resolved from relative path hint %1.").arg(mapping->relativePathHint);
-            logPolicyDiagnostic(accountState, QStringLiteral("  -> RESOLVED BY HINT to '%1'").arg(mapping->localPath));
-            qCInfo(lcDriveMappingManager) << "  Resolved from hint to" << mapping->localPath;
-            return true;
-        }
 
-        logPolicyDiagnostic(accountState, QStringLiteral("    Path does not exist locally"));
-        qCInfo(lcDriveMappingManager) << "      Path does not exist locally";
-        if (firstMissingHintPath.isEmpty())
-            firstMissingHintPath = hintedPath;
+        for (const auto &candidatePath : candidatePaths) {
+            logPolicyDiagnostic(accountState, QStringLiteral("  Checking hint path '%1'").arg(candidatePath));
+            qCInfo(lcDriveMappingManager) << "    Checking hint path:" << candidatePath;
+            mapping->localPath = candidatePath;
+            if (QDir(candidatePath).exists()) {
+                mapping->resolved = true;
+                mapping->status = tr("Resolved from relative path hint %1.").arg(mapping->relativePathHint);
+                logPolicyDiagnostic(accountState, QStringLiteral("  -> RESOLVED BY HINT to '%1'").arg(mapping->localPath));
+                qCInfo(lcDriveMappingManager) << "  Resolved from hint to" << mapping->localPath;
+                return true;
+            }
+
+            logPolicyDiagnostic(accountState, QStringLiteral("    Path does not exist locally"));
+            qCInfo(lcDriveMappingManager) << "      Path does not exist locally";
+            if (firstMissingHintPath.isEmpty())
+                firstMissingHintPath = candidatePath;
+        }
 
         bool selectiveSyncListRead = false;
         const auto selectiveSyncBlackList = folder->journalDb()->getSelectiveSyncList(SyncJournalDb::SelectiveSyncBlackList, &selectiveSyncListRead);
