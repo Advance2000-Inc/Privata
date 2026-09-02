@@ -66,7 +66,11 @@ DriveMappingSettings::DriveMappingSettings(AccountState *accountState, QWidget *
     _table = new QTableWidget(this);
     _table->setColumnCount(4);
     _table->setHorizontalHeaderLabels({ tr("Folder"), tr("Local path"), tr("Type"), tr("Drive") });
+    _table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
     _table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    _table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Interactive);
+    _table->horizontalHeader()->resizeSection(0, 250);
+    _table->horizontalHeader()->resizeSection(2, 250);
     _table->verticalHeader()->setVisible(false);
     _table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     _table->setSelectionMode(QAbstractItemView::NoSelection);
