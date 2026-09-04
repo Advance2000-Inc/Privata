@@ -62,6 +62,7 @@ private:
     AccountPtr _account;
     QString _appPassword;
     bool _canWipeLocalFiles = false;
+    bool _wipeRequested = false;
     QNetworkAccessManager *_networkManager = nullptr;
     QNetworkReply *_networkReplyCheck = nullptr;
     QNetworkReply *_networkReplySuccess = nullptr;
