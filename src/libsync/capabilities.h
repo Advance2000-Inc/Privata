@@ -22,7 +22,8 @@ enum PushNotificationType {
     None = 0,
     Files = 1,
     Activities = 2,
-    Notifications = 4
+    Notifications = 4,
+    Custom = 8
 };
 Q_DECLARE_FLAGS(PushNotificationTypes, PushNotificationType)
 Q_DECLARE_OPERATORS_FOR_FLAGS(PushNotificationTypes)

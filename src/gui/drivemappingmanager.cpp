@@ -1,12 +1,15 @@
 #include "drivemappingmanager.h"
 
+#include "account.h"
 #include "accountmanager.h"
 #include "accountstate.h"
 #include "common/syncjournalfilerecord.h"
+#include "configfile.h"
 #include "folder.h"
 #include "folderman.h"
 #include "logger.h"
 #include "networkjobs.h"
+#include "pushnotifications.h"
 
 #include <QDir>
 #include <QFileInfo>
@@ -39,6 +42,7 @@ constexpr auto relativePathHintKeyC = "relativePathHint";
 constexpr auto enforcementKeyC = "enforcement";
 constexpr auto suppressedKeyC = "suppressed";
 constexpr auto jsonKeyC = "json";
+constexpr auto versionKeyC = "version";
 constexpr auto enforcedC = "enforced";
 constexpr auto suggestedC = "suggested";
 constexpr auto useMockPolicyMappingsC = false;
@@ -119,6 +123,14 @@ QVector<DriveMappingManager::PolicyMapping> parsePolicyMappings(const QJsonDocum
     return result;
 }
 
+// The version accompanying the effective mapping list (ocs.data.version), used to guard
+// against applying stale or out-of-order responses.
+qint64 parsePolicyVersion(const QJsonDocument &doc)
+{
+    const auto data = doc.object().value(QLatin1String("ocs")).toObject().value(QLatin1String("data")).toObject();
+    return static_cast<qint64>(data.value(QLatin1String("version")).toDouble());
+}
+
 void logPolicyMappingsJson(const QString &source, AccountState *accountState, const QJsonDocument &doc)
 {
     const auto accountName = accountState && accountState->account()
@@ -170,12 +182,6 @@ DriveMappingManager::DriveMappingManager(FolderMan *folderMan)
         }
     };
 
-    _policyRefreshTimer.setInterval(std::chrono::minutes(5));
-    connect(&_policyRefreshTimer, &QTimer::timeout, this, [refreshPolicyAccounts] {
-        refreshPolicyAccounts(QStringLiteral("timer"));
-    });
-    _policyRefreshTimer.start();
-
     QTimer::singleShot(0, this, [refreshPolicyAccounts] {
         refreshPolicyAccounts(QStringLiteral("startup"));
     });
@@ -192,6 +198,18 @@ DriveMappingManager::DriveMappingManager(FolderMan *folderMan)
             refreshPolicyAccounts(QStringLiteral("folderListChanged"));
         });
     });
+
+    // Fallback for missed/undelivered push events (e.g. notify_push unavailable or the
+    // websocket dropped): periodically re-check with the server, same as other pollable state.
+    _policyRefreshTimer.setInterval(ConfigFile().remotePollInterval());
+    connect(&_policyRefreshTimer, &QTimer::timeout, this, [this] {
+        const auto accounts = AccountManager::instance()->accounts();
+        for (const auto &account : accounts) {
+            if (account->isConnected())
+                fetchPolicyMappings(account.data());
+        }
+    });
+    _policyRefreshTimer.start();
 }
 
 QVector<QChar> DriveMappingManager::availableDriveLetters()
@@ -315,7 +333,9 @@ void DriveMappingManager::registerPolicyAccount(AccountState *accountState)
     _registeredPolicyAccounts.insert(accountState);
     connect(accountState, &QObject::destroyed, this, [this, accountState] {
         _registeredPolicyAccounts.remove(accountState);
+        _pushConnectedAccounts.remove(accountState);
         _policyJobs.remove(accountState);
+        _policyRefreshState.remove(accountState);
     });
     connect(accountState, &AccountState::isConnectedChanged, this, [this, accountState] {
         if (accountState->isConnected())
@@ -323,6 +343,90 @@ void DriveMappingManager::registerPolicyAccount(AccountState *accountState)
         else
             applyCachedPolicyMappings(accountState);
     });
+
+    // Refetch as soon as push notifications are (re-)established, instead of waiting on the timer.
+    connect(accountState->account().data(), &Account::pushNotificationsReady, this, [this, accountState] {
+        connectPushNotificationsForAccount(accountState);
+    });
+    connectPushNotificationsForAccount(accountState);
+}
+
+void DriveMappingManager::connectPushNotificationsForAccount(AccountState *accountState)
+{
+    if (!accountState || !accountState->account() || _pushConnectedAccounts.contains(accountState))
+        return;
+
+    auto *pushNotifications = accountState->account()->pushNotifications();
+    if (!pushNotifications || !pushNotifications->isReady())
+        return;
+
+    _pushConnectedAccounts.insert(accountState);
+
+    // The drive_mapping_policies app pushes a "drive_mapping_policy_changed" notify_custom
+    // event whose JSON body is just {"version":N,"reason":"policy_changed"}. It is an
+    // invalidation signal only; the effective mappings are never taken from the event body
+    // and must always be re-fetched from the REST endpoint.
+    connect(pushNotifications, &PushNotifications::customMessageReceived, this,
+        [this, accountState](Account *, const QString &messageType, const QByteArray &body) {
+            if (messageType != QLatin1String("drive_mapping_policy_changed"))
+                return;
+
+            qCInfo(lcDriveMappingManager) << "Push notification received for"
+                                          << accountState->account()->displayName();
+            handlePolicyChangedEvent(accountState, body);
+        });
+}
+
+DriveMappingManager::PolicyRefreshState &DriveMappingManager::policyRefreshState(AccountState *accountState)
+{
+    auto it = _policyRefreshState.find(accountState);
+    if (it == _policyRefreshState.end()) {
+        PolicyRefreshState state;
+        if (accountState) {
+            auto settings = accountState->settings();
+            settings->beginGroup(QLatin1String(policyCacheGroupC));
+            state.localVersion = settings->value(QLatin1String(versionKeyC), 0).toLongLong();
+            settings->endGroup();
+        }
+        it = _policyRefreshState.insert(accountState, state);
+    }
+    return *it;
+}
+
+void DriveMappingManager::handlePolicyChangedEvent(AccountState *accountState, const QByteArray &body)
+{
+    if (!accountState)
+        return;
+
+    QJsonParseError parseError;
+    const auto doc = QJsonDocument::fromJson(body, &parseError);
+    const auto versionValue = doc.object().value(QLatin1String("version"));
+    if (parseError.error != QJsonParseError::NoError || !doc.isObject() || !versionValue.isDouble()) {
+        qCWarning(lcDriveMappingManager) << "Ignoring malformed drive_mapping_policy_changed event body for"
+                                         << accountState->account()->displayName() << ":" << parseError.errorString();
+        return;
+    }
+
+    const auto eventVersion = static_cast<qint64>(versionValue.toDouble());
+    auto &state = policyRefreshState(accountState);
+    if (eventVersion <= state.localVersion) {
+        qCInfo(lcDriveMappingManager) << "Ignoring stale/duplicate drive_mapping_policy_changed event, version"
+                                      << eventVersion << "<= applied version" << state.localVersion;
+        return;
+    }
+
+    state.pendingVersion = std::max(state.pendingVersion, eventVersion);
+    qCInfo(lcDriveMappingManager) << "Policy drive mapping change signalled for" << accountState->account()->displayName()
+                                  << "version" << eventVersion << "; refreshing mappings";
+    triggerPolicyRefresh(accountState);
+}
+
+void DriveMappingManager::triggerPolicyRefresh(AccountState *accountState)
+{
+    if (!accountState || _policyJobs.value(accountState))
+        return; // A fetch is already in flight; it will pick up the pending version once it completes.
+
+    fetchPolicyMappings(accountState);
 }
 
 void DriveMappingManager::fetchPolicyMappings(AccountState *accountState)
@@ -404,14 +508,32 @@ void DriveMappingManager::fetchPolicyMappings(AccountState *accountState)
         }
         logPolicyMappingsJson(QStringLiteral("server"), accountState, doc);
 
-        auto settings = accountState->settings();
-        settings->beginGroup(QLatin1String(policyCacheGroupC));
-        settings->setValue(QLatin1String(jsonKeyC), QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
-        settings->endGroup();
+        const auto responseVersion = parsePolicyVersion(doc);
+        auto &state = policyRefreshState(accountState);
+        if (responseVersion > state.localVersion) {
+            auto settings = accountState->settings();
+            settings->beginGroup(QLatin1String(policyCacheGroupC));
+            settings->setValue(QLatin1String(jsonKeyC), QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
+            settings->setValue(QLatin1String(versionKeyC), responseVersion);
+            settings->endGroup();
 
-        qCInfo(lcDriveMappingManager) << "Policy drive mapping retrieval succeeded for" << accountState->account()->displayName();
-        applyPolicyMappings(accountState, parsePolicyMappings(doc), QStringLiteral("server"));
+            qCInfo(lcDriveMappingManager) << "Policy drive mapping retrieval succeeded for" << accountState->account()->displayName() << "version" << responseVersion;
+            applyPolicyMappings(accountState, parsePolicyMappings(doc), QStringLiteral("server"));
+            state.localVersion = responseVersion;
+        } else {
+            qCInfo(lcDriveMappingManager) << "Policy drive mapping response version" << responseVersion
+                                          << "for" << accountState->account()->displayName()
+                                          << "is not newer than applied version" << state.localVersion << "; skipping reapply";
+        }
+
+        const auto hasNewerPending = state.pendingVersion > state.localVersion;
+        if (!hasNewerPending)
+            state.pendingVersion = -1;
+
         job->deleteLater();
+
+        if (hasNewerPending)
+            triggerPolicyRefresh(accountState);
     });
     job->start();
 }

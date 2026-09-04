@@ -76,7 +76,18 @@ signals:
     void mappingsChanged();
 
 private:
+    /// Tracks the applied policy mapping version and any newer version signalled while a fetch is already in flight.
+    struct PolicyRefreshState
+    {
+        qint64 localVersion = 0;
+        qint64 pendingVersion = -1;
+    };
+
     void registerPolicyAccount(AccountState *accountState);
+    void connectPushNotificationsForAccount(AccountState *accountState);
+    void handlePolicyChangedEvent(AccountState *accountState, const QByteArray &body);
+    void triggerPolicyRefresh(AccountState *accountState);
+    [[nodiscard]] PolicyRefreshState &policyRefreshState(AccountState *accountState);
     void fetchPolicyMappings(AccountState *accountState);
     void applyCachedPolicyMappings(AccountState *accountState);
     void applyPolicyMappings(AccountState *accountState, QVector<PolicyMapping> mappings, const QString &source);
@@ -94,7 +105,10 @@ private:
     /// Letters this manager created, mapped to the local path they point at.
     QHash<QChar, QString> _ownedMappings;
     QHash<AccountState *, QPointer<JsonApiJob>> _policyJobs;
+    QHash<AccountState *, PolicyRefreshState> _policyRefreshState;
     QSet<AccountState *> _registeredPolicyAccounts;
+    /// Accounts whose push-notification signals we've already wired up to trigger a policy refetch.
+    QSet<AccountState *> _pushConnectedAccounts;
     QTimer _policyRefreshTimer;
 };
 

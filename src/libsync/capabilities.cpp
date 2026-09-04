@@ -353,6 +353,13 @@ PushNotificationTypes Capabilities::availablePushNotifications() const
         pushNotificationTypes.setFlag(PushNotificationType::Notifications);
     }
 
+    // Custom app events (e.g. drive_mapping_policy_changed) are delivered over the same
+    // websocket regardless of which built-in types the server advertises here, so the
+    // websocket must still be opened even if none of the known types are present.
+    if (!types.isEmpty()) {
+        pushNotificationTypes.setFlag(PushNotificationType::Custom);
+    }
+
     return pushNotificationTypes;
 }
 

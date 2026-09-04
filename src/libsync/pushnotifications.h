@@ -76,6 +76,11 @@ signals:
     void notificationsChanged(OCC::Account *account);
 
     /**
+     * Will be emitted when an app sends a custom notify_push event (e.g. via OCA\NotifyPush\IQueue)
+     */
+    void customMessageReceived(OCC::Account *account, const QString &messageType, const QByteArray &body);
+
+    /**
      * Will be emitted if push notifications are unable to authenticate
      *
      * It's save to call #PushNotifications::setup() after this signal has been emitted.
@@ -114,6 +119,7 @@ private:
     void handleInvalidCredentials();
     void handleNotifyNotification();
     void handleNotifyActivity();
+    void handleCustomMessage(const QString &message);
 
     void emitFilesChanged();
     void emitNotificationsChanged();
