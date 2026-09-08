@@ -116,6 +116,8 @@ void DriveMappingSettings::refresh()
     }
     const auto policyMappings = FolderMan::instance()->driveMappingManager().policyMappings(_accountState);
     for (const auto &mapping : policyMappings) {
+        if (mapping.suppressed && mapping.enforcement != QLatin1String(enforcedC))
+            continue;
         _table->insertRow(row);
         buildPolicyRow(mapping, row);
         ++row;
@@ -255,6 +257,12 @@ void DriveMappingSettings::slotRemoveManualMapping(const QString &localPath)
     refresh();
 }
 
+void DriveMappingSettings::slotRemoveSuggestedPolicyMapping(const QString &folderId, QChar letter)
+{
+    FolderMan::instance()->driveMappingManager().removeSuggestedPolicyMapping(_accountState, folderId, letter);
+    refresh();
+}
+
 void DriveMappingSettings::slotShowContextMenu(const QPoint &pos)
 {
     const auto index = _table->indexAt(pos);
@@ -280,9 +288,15 @@ void DriveMappingSettings::slotShowContextMenu(const QPoint &pos)
         const auto driveLetterString = pathItem->data(driveLetterRole).toString();
         const auto driveLetter = driveLetterString.isEmpty() ? QChar() : driveLetterString.at(0);
         const auto enforcement = pathItem->data(enforcementRole).toString();
-        menu.addAction(tr("Why can't I change this?"), this, [this] {
-            QMessageBox::information(this, tr("Drive mapping"), tr("This drive mapping is an enforced company managed policy and it cannot be remapped or removed."));
-        });
+        if (enforcement == QLatin1String(enforcedC)) {
+            menu.addAction(tr("Why can't I change this?"), this, [this] {
+                QMessageBox::information(this, tr("Drive mapping"), tr("This drive mapping is an enforced company managed policy and it cannot be remapped or removed."));
+            });
+        } else {
+            menu.addAction(tr("Remove"), this, [this, folderId, driveLetter] {
+                slotRemoveSuggestedPolicyMapping(folderId, driveLetter);
+            });
+        }
     }
     menu.exec(_table->viewport()->mapToGlobal(pos));
 }

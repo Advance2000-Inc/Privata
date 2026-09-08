@@ -718,7 +718,15 @@ void DriveMappingManager::applyPolicyMappings(AccountState *accountState, QVecto
         currentKeys.insert(key);
         settings->beginGroup(key);
         const auto previousPath = settings->value(QLatin1String(pathKeyC)).toString();
+        const auto suppressed = settings->value(QLatin1String(suppressedKeyC), false).toBool();
         settings->endGroup();
+
+        const auto enforcement = mapping.enforcement.isEmpty() ? QString::fromLatin1(suggestedC) : mapping.enforcement;
+        if (suppressed && enforcement != QLatin1String(enforcedC)) {
+            logPolicyDiagnostic(accountState, QStringLiteral("  %1 SKIPPED (suggested policy suppressed by user)").arg(mapping.driveLetter));
+            qCInfo(lcDriveMappingManager) << "Skipping suppressed suggested policy drive mapping" << mapping.driveLetter << mapping.folderId;
+            continue;
+        }
 
         if (!resolvePolicyMapping(accountState, &mapping)) {
             logPolicyDiagnostic(accountState, QStringLiteral("  %1 RESOLVE_FAILED: %2").arg(mapping.driveLetter, mapping.status));
@@ -730,8 +738,6 @@ void DriveMappingManager::applyPolicyMappings(AccountState *accountState, QVecto
         logPolicyDiagnostic(accountState, QStringLiteral("  %1 resolved to '%2'").arg(mapping.driveLetter, mapping.localPath));
 
         // Policy always takes priority: suggested and enforced mappings are both applied unconditionally.
-        const auto enforcement = mapping.enforcement.isEmpty() ? QString::fromLatin1(suggestedC) : mapping.enforcement;
-
         qCInfo(lcDriveMappingManager) << "Applying" << enforcement << "policy drive mapping" << mapping.driveLetter << mapping.folderId << "from" << source << "to" << mapping.localPath;
         logPolicyDiagnostic(accountState, QStringLiteral("  %1 MAPPING to '%2' (adoptExisting=%3)").arg(mapping.driveLetter, mapping.localPath, QString::number(!previousPath.isEmpty())));
         
