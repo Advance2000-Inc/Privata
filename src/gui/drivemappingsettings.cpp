@@ -11,6 +11,7 @@
 #include "drivemappingmanager.h"
 
 #include <QComboBox>
+#include <QColor>
 #include <QDir>
 #include <QFileDialog>
 #include <QHBoxLayout>
@@ -22,6 +23,15 @@
 #include <QTableWidgetItem>
 
 #include <algorithm>
+
+namespace {
+constexpr int rowKindRole = Qt::UserRole + 1;
+constexpr int driveLetterRole = Qt::UserRole + 2;
+constexpr int enforcementRole = Qt::UserRole + 3;
+constexpr auto manualRowKindC = "manual";
+constexpr auto policyRowKindC = "policy";
+constexpr auto enforcedC = "enforced";
+}
 #endif
 
 namespace OCC {
@@ -44,7 +54,7 @@ DriveMappingSettings::DriveMappingSettings(AccountState *accountState, QWidget *
     toolbarLayout->addWidget(addButton);
 
     auto *refreshButton = new QPushButton(tr("Refresh"), this);
-    connect(refreshButton, &QPushButton::clicked, this, &DriveMappingSettings::refresh);
+    connect(refreshButton, &QPushButton::clicked, this, &DriveMappingSettings::slotForceRefresh);
     toolbarLayout->addWidget(refreshButton);
 
     _removeAllButton = new QPushButton(tr("Remove all mappings"), this);
@@ -54,9 +64,13 @@ DriveMappingSettings::DriveMappingSettings(AccountState *accountState, QWidget *
     layout->addLayout(toolbarLayout);
 
     _table = new QTableWidget(this);
-    _table->setColumnCount(3);
-    _table->setHorizontalHeaderLabels({ tr("Folder"), tr("Local path"), tr("Drive") });
+    _table->setColumnCount(4);
+    _table->setHorizontalHeaderLabels({ tr("Folder"), tr("Local path"), tr("Type"), tr("Drive") });
+    _table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Interactive);
     _table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
+    _table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Interactive);
+    _table->horizontalHeader()->resizeSection(0, 250);
+    _table->horizontalHeader()->resizeSection(2, 250);
     _table->verticalHeader()->setVisible(false);
     _table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     _table->setSelectionMode(QAbstractItemView::NoSelection);
@@ -72,7 +86,17 @@ DriveMappingSettings::DriveMappingSettings(AccountState *accountState, QWidget *
         this, &DriveMappingSettings::refresh);
 
     refresh();
+    // Pick up any policy changes made on the server since this tab was last shown, rather than the stale cache.
+    FolderMan::instance()->driveMappingManager().refreshPolicyMappings(_accountState);
 #endif
+}
+
+void DriveMappingSettings::slotForceRefresh()
+{
+#ifdef Q_OS_WIN
+    FolderMan::instance()->driveMappingManager().refreshPolicyMappings(_accountState);
+#endif
+    refresh();
 }
 
 void DriveMappingSettings::refresh()
@@ -88,6 +112,14 @@ void DriveMappingSettings::refresh()
         _table->insertRow(row);
         buildRow(folder, row);
         anyMapped = anyMapped || !folder->driveLetter().isNull();
+        ++row;
+    }
+    const auto policyMappings = FolderMan::instance()->driveMappingManager().policyMappings(_accountState);
+    for (const auto &mapping : policyMappings) {
+        if (mapping.suppressed && mapping.enforcement != QLatin1String(enforcedC))
+            continue;
+        _table->insertRow(row);
+        buildPolicyRow(mapping, row);
         ++row;
     }
     const auto manualMappings = FolderMan::instance()->driveMappingManager().manualMappings(_accountState);
@@ -107,7 +139,7 @@ void DriveMappingSettings::buildRow(Folder *folder, int row)
 {
     _table->setItem(row, 0, new QTableWidgetItem(folder->shortGuiRemotePathOrAppName()));
     _table->setItem(row, 1, new QTableWidgetItem(QDir::toNativeSeparators(folder->path())));
-
+    _table->setItem(row, 2, new QTableWidgetItem(tr("Synced folder")));
     const auto currentLetter = folder->driveLetter();
 
     auto *combo = new QComboBox(this);
@@ -122,15 +154,26 @@ void DriveMappingSettings::buildRow(Folder *folder, int row)
     connect(combo, &QComboBox::currentIndexChanged, this, [this, folder, combo](int index) {
         slotLetterChanged(folder, combo->itemData(index).toChar());
     });
-    _table->setCellWidget(row, 2, combo);
+    _table->setCellWidget(row, 3, combo);
+}
+
+QString extractFolderNameFromPath(const QString &path)
+{
+    const auto cleanPath = QDir::cleanPath(path);
+    const auto lastSlash = cleanPath.lastIndexOf(QLatin1Char('/'));
+    if (lastSlash < 0)
+        return cleanPath;
+    return cleanPath.mid(lastSlash + 1);
 }
 
 void DriveMappingSettings::buildManualRow(const DriveMappingManager::ManualMapping &mapping, int row)
 {
-    _table->setItem(row, 0, new QTableWidgetItem(tr("Manual mapping")));
+    _table->setItem(row, 0, new QTableWidgetItem(extractFolderNameFromPath(mapping.localPath)));
     auto *pathItem = new QTableWidgetItem(QDir::toNativeSeparators(mapping.localPath));
     pathItem->setData(Qt::UserRole, mapping.localPath);
+    pathItem->setData(rowKindRole, QLatin1String(manualRowKindC));
     _table->setItem(row, 1, pathItem);
+    _table->setItem(row, 2, new QTableWidgetItem(tr("Personal (manual)")));
 
     auto *combo = new QComboBox(this);
     combo->addItem(tr("No drive"), QVariant::fromValue(QChar()));
@@ -144,7 +187,35 @@ void DriveMappingSettings::buildManualRow(const DriveMappingManager::ManualMappi
     connect(combo, &QComboBox::currentIndexChanged, this, [this, path = mapping.localPath, combo](int index) {
         slotManualLetterChanged(path, combo->itemData(index).toChar());
     });
-    _table->setCellWidget(row, 2, combo);
+    _table->setCellWidget(row, 3, combo);
+}
+
+void DriveMappingSettings::buildPolicyRow(const DriveMappingManager::PolicyMapping &mapping, int row)
+{
+    _table->setItem(row, 0, new QTableWidgetItem(mapping.relativePathHint.isEmpty() ? extractFolderNameFromPath(mapping.folderPath) : mapping.relativePathHint));
+
+    const auto pathText = mapping.resolved
+        ? QDir::toNativeSeparators(mapping.localPath)
+        : tr("The folder is not present locally.");
+    auto *pathItem = new QTableWidgetItem(pathText);
+    if (!mapping.resolved) {
+        pathItem->setBackground(QColor(255, 128, 128, 128));
+    }
+    pathItem->setData(Qt::UserRole, mapping.folderId);
+    pathItem->setData(rowKindRole, QLatin1String(policyRowKindC));
+    pathItem->setData(driveLetterRole, QString(mapping.driveLetter));
+    pathItem->setData(enforcementRole, mapping.enforcement);
+    _table->setItem(row, 1, pathItem);
+
+    const auto enforcement = mapping.enforcement.isEmpty() ? tr("suggested") : mapping.enforcement;
+    _table->setItem(row, 2, new QTableWidgetItem(tr("Company managed policy (%1)").arg(enforcement)));
+
+    auto *driveLabel = new QLabel(mapping.driveLetter.isNull() ? tr("No drive") : QStringLiteral("%1:").arg(mapping.driveLetter), this);
+    driveLabel->setContentsMargins(8, 0, 0, 0);
+    driveLabel->setToolTip(mapping.enforcement == QLatin1String(enforcedC)
+            ? tr("This drive mapping is enforced by administrator policy.")
+            : tr("This drive mapping was suggested by administrator policy."));
+    _table->setCellWidget(row, 3, driveLabel);
 }
 
 void DriveMappingSettings::slotLetterChanged(Folder *folder, QChar letter)
@@ -184,6 +255,12 @@ void DriveMappingSettings::slotRemoveManualMapping(const QString &localPath)
     refresh();
 }
 
+void DriveMappingSettings::slotRemoveSuggestedPolicyMapping(const QString &folderId, QChar letter)
+{
+    FolderMan::instance()->driveMappingManager().removeSuggestedPolicyMapping(_accountState, folderId, letter);
+    refresh();
+}
+
 void DriveMappingSettings::slotShowContextMenu(const QPoint &pos)
 {
     const auto index = _table->indexAt(pos);
@@ -195,13 +272,30 @@ void DriveMappingSettings::slotShowContextMenu(const QPoint &pos)
         return;
 
     const auto localPath = pathItem->data(Qt::UserRole).toString();
-    if (localPath.isEmpty())
+    const auto rowKind = pathItem->data(rowKindRole).toString();
+    if (localPath.isEmpty() && rowKind != QLatin1String(policyRowKindC))
         return;
 
     QMenu menu(this);
-    menu.addAction(tr("Remove"), this, [this, localPath] {
-        slotRemoveManualMapping(localPath);
-    });
+    if (rowKind == QLatin1String(manualRowKindC)) {
+        menu.addAction(tr("Remove"), this, [this, localPath] {
+            slotRemoveManualMapping(localPath);
+        });
+    } else if (rowKind == QLatin1String(policyRowKindC)) {
+        const auto folderId = pathItem->data(Qt::UserRole).toString();
+        const auto driveLetterString = pathItem->data(driveLetterRole).toString();
+        const auto driveLetter = driveLetterString.isEmpty() ? QChar() : driveLetterString.at(0);
+        const auto enforcement = pathItem->data(enforcementRole).toString();
+        if (enforcement == QLatin1String(enforcedC)) {
+            menu.addAction(tr("Why can't I change this?"), this, [this] {
+                QMessageBox::information(this, tr("Drive mapping"), tr("This drive mapping is an enforced company managed policy and it cannot be remapped or removed."));
+            });
+        } else {
+            menu.addAction(tr("Remove"), this, [this, folderId, driveLetter] {
+                slotRemoveSuggestedPolicyMapping(folderId, driveLetter);
+            });
+        }
+    }
     menu.exec(_table->viewport()->mapToGlobal(pos));
 }
 

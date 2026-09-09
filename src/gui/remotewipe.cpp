@@ -27,6 +27,12 @@ RemoteWipe::RemoteWipe(AccountPtr account, QObject *parent)
             return;
         }
 
+        // accountRemoved is also emitted on plain application shutdown and on manual
+        // account removal: only report a wipe the server actually asked for.
+        if (!_wipeRequested) {
+            return;
+        }
+
         notifyServerSuccess();
     });
 
@@ -102,6 +108,8 @@ void RemoteWipe::slotCheckJob()
 
     if (wipe) {
         qCInfo(lcRemoteWipe) << "Starting remote wipe for" << _account->displayName();
+
+        _wipeRequested = true;
 
         /* IMPORTANT - remove later - FIXME MS@2019-12-07 -->
          * TODO: For "Log out" & "Remove account": Remove client CA certs and KEY!

@@ -112,6 +112,8 @@ void PushNotifications::onWebSocketTextMessageReceived(const QString &message)
         handleAuthenticated();
     } else if (message == "err: Invalid credentials") {
         handleInvalidCredentials();
+    } else {
+        handleCustomMessage(message);
     }
 }
 
@@ -221,6 +223,17 @@ void PushNotifications::handleNotifyActivity()
 {
     qCInfo(lcPushNotifications) << "Push activity arrived";
     emitActivitiesChanged();
+}
+
+void PushNotifications::handleCustomMessage(const QString &message)
+{
+    // Custom notify_push events (OCA\NotifyPush\IQueue::push) arrive as "<message_type>" or "<message_type> <json body>"
+    const auto spaceIndex = message.indexOf(QLatin1Char(' '));
+    const auto messageType = spaceIndex < 0 ? message : message.left(spaceIndex);
+    const auto body = spaceIndex < 0 ? QByteArray() : message.mid(spaceIndex + 1).toUtf8();
+
+    qCInfo(lcPushNotifications) << "Custom push notification arrived:" << messageType;
+    emit customMessageReceived(_account, messageType, body);
 }
 
 void PushNotifications::onWebSocketPongReceived(quint64 /*elapsedTime*/, const QByteArray & /*payload*/)

@@ -103,6 +103,18 @@ Button {
                         userStatusDrawer.openUserStatusMessageDrawer(model.index);
                         accountMenu.close();
                     }
+                    onShowAccountActions: {
+                        accountActionsMenu.accountIndex = id;
+                        accountActionsMenu.accountConnected = connected;
+                        accountActionsMenu.accountHasUserStatus = hasUserStatus;
+                        accountActionsMenu.accountCanLogout = canLogout;
+                        accountActionsMenu.accountRemoveText = removeAccountText;
+                        Qt.callLater(function() {
+                            accountActionsMenu.popup(root,
+                                Math.max(0, accountMenu.x + accountMenu.width - accountActionsMenu.implicitWidth),
+                                accountMenu.y + instantiatedUserLine.y + instantiatedUserLine.height);
+                        });
+                    }
                     onClicked: UserModel.currentUserId = model.index;
 
                     function updateMenuWidth()
@@ -347,6 +359,60 @@ Button {
                 sourceSize.height: Style.accountDropDownCaretSize
                 Accessible.role: Accessible.PopupMenu
                 Accessible.name: qsTr("Account switcher and settings menu")
+            }
+        }
+    }
+
+    AutoSizingMenu {
+        id: accountActionsMenu
+
+        property int accountIndex: -1
+        property bool accountConnected: false
+        property bool accountHasUserStatus: false
+        property bool accountCanLogout: false
+        property string accountRemoveText: ""
+
+        closePolicy: Menu.CloseOnPressOutsideParent | Menu.CloseOnEscape
+
+        MenuItem {
+            id: setStatusButton
+            enabled: accountConnected && accountHasUserStatus
+            text: qsTr("Set status")
+            onClicked: {
+                userStatusDrawer.openUserStatusDrawer(accountActionsMenu.accountIndex);
+                accountActionsMenu.close();
+            }
+        }
+
+        MenuItem {
+            id: statusMessageButton
+            enabled: accountConnected && accountHasUserStatus
+            text: qsTr("Status message")
+            onClicked: {
+                userStatusDrawer.openUserStatusMessageDrawer(accountActionsMenu.accountIndex);
+                accountActionsMenu.close();
+            }
+        }
+
+        MenuItem {
+            id: logInOutButton
+            enabled: accountActionsMenu.accountCanLogout
+            text: accountActionsMenu.accountConnected ? qsTr("Log out") : qsTr("Log in")
+            onClicked: {
+                if (accountActionsMenu.accountConnected)
+                    UserModel.logout(accountActionsMenu.accountIndex);
+                else
+                    UserModel.login(accountActionsMenu.accountIndex);
+                accountActionsMenu.close();
+            }
+        }
+
+        MenuItem {
+            id: removeAccountButton
+            text: accountActionsMenu.accountRemoveText
+            onClicked: {
+                UserModel.removeAccount(accountActionsMenu.accountIndex);
+                accountActionsMenu.close();
             }
         }
     }

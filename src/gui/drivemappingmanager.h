@@ -1,9 +1,13 @@
 #pragma once
 
+#include <QByteArray>
 #include <QChar>
 #include <QHash>
 #include <QObject>
+#include <QPointer>
+#include <QSet>
 #include <QString>
+#include <QTimer>
 #include <QVector>
 
 namespace OCC {
@@ -11,6 +15,7 @@ namespace OCC {
 class FolderMan;
 class Folder;
 class AccountState;
+class JsonApiJob;
 
 /**
  * @brief Maps synced folders to Windows drive letters.
@@ -29,6 +34,19 @@ public:
         QChar driveLetter;
     };
 
+    struct PolicyMapping
+    {
+        QString folderId;
+        QString folderPath;
+        QString relativePathHint;
+        QString localPath;
+        QChar driveLetter;
+        QString enforcement;
+        QString status;
+        bool resolved = false;
+        bool suppressed = false;
+    };
+
     explicit DriveMappingManager(FolderMan *folderMan);
 
     /// Drive letters not currently used by a real drive, an existing substitution, or the system drive.
@@ -41,12 +59,17 @@ public:
     bool unmapLetter(QChar letter);
 
     [[nodiscard]] QVector<ManualMapping> manualMappings(AccountState *accountState) const;
+    [[nodiscard]] QVector<PolicyMapping> policyMappings(AccountState *accountState) const;
     bool addManualMapping(AccountState *accountState, const QString &localPath);
     bool removeManualMapping(AccountState *accountState, const QString &localPath);
     bool setManualMappingDriveLetter(AccountState *accountState, const QString &localPath, QChar letter);
+    bool removeSuggestedPolicyMapping(AccountState *accountState, const QString &folderId, QChar letter);
 
     /// Re-establishes all persisted mappings; called once after folders are loaded at startup.
     void applyAllMappings();
+
+    /// Forces an immediate re-fetch of policy drive mappings from the server for accountState (or all accounts if null).
+    void refreshPolicyMappings(AccountState *accountState = nullptr);
 
 signals:
     /// Emitted when a mapping could not be created or removed; message is user-facing.
@@ -54,8 +77,28 @@ signals:
     void mappingsChanged();
 
 private:
+    /// Tracks the applied policy mapping version and any newer version signalled while a fetch is already in flight.
+    struct PolicyRefreshState
+    {
+        qint64 localVersion = 0;
+        qint64 pendingVersion = -1;
+        /// Digest of the last applied mapping list, so content changes are caught even when the server fails to bump the version.
+        QByteArray appliedDigest;
+    };
+
+    void registerPolicyAccount(AccountState *accountState);
+    void connectPushNotificationsForAccount(AccountState *accountState);
+    void handlePolicyChangedEvent(AccountState *accountState, const QByteArray &body);
+    void triggerPolicyRefresh(AccountState *accountState);
+    [[nodiscard]] PolicyRefreshState &policyRefreshState(AccountState *accountState);
+    void fetchPolicyMappings(AccountState *accountState);
+    void applyCachedPolicyMappings(AccountState *accountState);
+    void applyPolicyMappings(AccountState *accountState, QVector<PolicyMapping> mappings, const QString &source);
     void saveManualMappings(AccountState *accountState, const QVector<ManualMapping> &mappings) const;
-    bool mapPath(const QString &localPath, QChar letter, const QString &folderAlias = QString());
+    [[nodiscard]] QVector<PolicyMapping> cachedPolicyMappings(AccountState *accountState) const;
+    [[nodiscard]] bool resolvePolicyMapping(AccountState *accountState, PolicyMapping *mapping) const;
+    [[nodiscard]] static QString policyKey(const QString &folderId, QChar letter);
+    bool mapPath(const QString &localPath, QChar letter, const QString &folderAlias = QString(), bool adoptExistingMapping = true);
     [[nodiscard]] static bool letterInUse(QChar letter);
     [[nodiscard]] static bool substitutionTargets(QChar letter, const QString &localPath);
     [[nodiscard]] static bool createSubstitution(QChar letter, const QString &localPath, QString *error);
@@ -64,6 +107,12 @@ private:
     FolderMan *_folderMan;
     /// Letters this manager created, mapped to the local path they point at.
     QHash<QChar, QString> _ownedMappings;
+    QHash<AccountState *, QPointer<JsonApiJob>> _policyJobs;
+    QHash<AccountState *, PolicyRefreshState> _policyRefreshState;
+    QSet<AccountState *> _registeredPolicyAccounts;
+    /// Accounts whose push-notification signals we've already wired up to trigger a policy refetch.
+    QSet<AccountState *> _pushConnectedAccounts;
+    QTimer _policyRefreshTimer;
 };
 
 } // namespace OCC

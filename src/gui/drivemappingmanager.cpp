@@ -1,14 +1,25 @@
 #include "drivemappingmanager.h"
 
+#include "account.h"
 #include "accountmanager.h"
 #include "accountstate.h"
+#include "common/syncjournalfilerecord.h"
+#include "configfile.h"
 #include "folder.h"
 #include "folderman.h"
+#include "logger.h"
+#include "networkjobs.h"
+#include "pushnotifications.h"
 
 #include <QDir>
+#include <QFileInfo>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QLoggingCategory>
 #include <QSettings>
 #include <QByteArray>
+#include <QCryptographicHash>
 
 #include <windows.h>
 
@@ -21,8 +32,21 @@ Q_LOGGING_CATEGORY(lcDriveMappingManager, "nextcloud.gui.drivemappingmanager", Q
 namespace {
 
 constexpr auto manualMappingsGroupC = "ManualDriveMappings";
+constexpr auto policyCacheGroupC = "PolicyDriveMappingCache";
+constexpr auto policyOwnedMappingsGroupC = "PolicyDriveMappings";
+constexpr auto endpointPathC = "/ocs/v2.php/apps/drive_mapping_policies/api/v1/mappings";
 constexpr auto pathKeyC = "path";
 constexpr auto driveLetterKeyC = "driveLetter";
+constexpr auto folderIdKeyC = "folderId";
+constexpr auto folderPathKeyC = "folderPath";
+constexpr auto relativePathHintKeyC = "relativePathHint";
+constexpr auto enforcementKeyC = "enforcement";
+constexpr auto suppressedKeyC = "suppressed";
+constexpr auto jsonKeyC = "json";
+constexpr auto versionKeyC = "version";
+constexpr auto enforcedC = "enforced";
+constexpr auto suggestedC = "suggested";
+constexpr auto useMockPolicyMappingsC = false;
 
 QString driveSpec(QChar letter)
 {
@@ -37,6 +61,107 @@ QString canonicalPath(const QString &path)
 QString mappingKeyForPath(const QString &path)
 {
     return QString::fromUtf8(canonicalPath(path).toUtf8().toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals));
+}
+
+QString mappingKeyForPolicy(const QString &folderId, QChar letter)
+{
+    const auto key = QStringLiteral("%1|%2").arg(folderId, QString(letter.toUpper()));
+    return QString::fromUtf8(key.toUtf8().toBase64(QByteArray::Base64UrlEncoding | QByteArray::OmitTrailingEquals));
+}
+
+QString normalizedRelativeHint(const QString &relativePathHint)
+{
+    auto hint = QDir::fromNativeSeparators(relativePathHint);
+    while (hint.startsWith(QLatin1Char('/')))
+        hint.remove(0, 1);
+    return QDir::cleanPath(hint);
+}
+
+QString relativeHintToLocalPath(Folder *folder, const QString &relativePathHint)
+{
+    if (!folder || relativePathHint.isEmpty())
+        return QString();
+
+    return canonicalPath(QDir(folder->path()).filePath(normalizedRelativeHint(relativePathHint)));
+}
+
+// The policy folder_path is the full remote path within the account (which may include
+// parent folders not reflected in the relative_path_hint, e.g. "/Folders to be mapped/Foo").
+// Resolve it relative to this folder's synced remote root so nested folders are found.
+QString folderPathToLocalPath(Folder *folder, const QString &folderPath)
+{
+    if (!folder || folderPath.isEmpty())
+        return QString();
+
+    const auto relativeToSyncRoot = folder->fulllRemotePathToPathInSyncJournalDb(folderPath);
+    if (relativeToSyncRoot.isEmpty())
+        return QString();
+
+    return canonicalPath(QDir(folder->path()).filePath(relativeToSyncRoot));
+}
+
+QVector<DriveMappingManager::PolicyMapping> parsePolicyMappings(const QJsonDocument &doc)
+{
+    QVector<DriveMappingManager::PolicyMapping> result;
+    const auto data = doc.object().value(QLatin1String("ocs")).toObject().value(QLatin1String("data")).toObject();
+    const auto mappings = data.value(QLatin1String("mappings")).toArray();
+    result.reserve(mappings.size());
+    for (const auto &mappingValue : mappings) {
+        const auto mappingObject = mappingValue.toObject();
+        DriveMappingManager::PolicyMapping mapping;
+        const auto driveLetter = mappingObject.value(QLatin1String("drive_letter")).toString();
+        mapping.driveLetter = driveLetter.isEmpty() ? QChar() : driveLetter.at(0).toUpper();
+        const auto folderIdValue = mappingObject.value(QLatin1String("folder_id"));
+        mapping.folderId = folderIdValue.isString()
+            ? folderIdValue.toString()
+            : QString::number(static_cast<qint64>(folderIdValue.toDouble()));
+        mapping.folderPath = mappingObject.value(QLatin1String("folder_path")).toString();
+        mapping.relativePathHint = mappingObject.value(QLatin1String("relative_path_hint")).toString();
+        mapping.enforcement = mappingObject.value(QLatin1String("enforcement")).toString().toLower();
+        if (!mapping.folderId.isEmpty() && !mapping.driveLetter.isNull())
+            result.append(mapping);
+    }
+    return result;
+}
+
+// The version accompanying the effective mapping list (ocs.data.version), used to guard
+// against applying stale or out-of-order responses.
+qint64 parsePolicyVersion(const QJsonDocument &doc)
+{
+    const auto data = doc.object().value(QLatin1String("ocs")).toObject().value(QLatin1String("data")).toObject();
+    return static_cast<qint64>(data.value(QLatin1String("version")).toDouble());
+}
+
+// Digest of the effective mapping list alone, deliberately excluding the version, so a
+// content change that the server forgot to accompany with a version bump is still detected.
+QByteArray policyMappingsDigest(const QJsonDocument &doc)
+{
+    const auto data = doc.object().value(QLatin1String("ocs")).toObject().value(QLatin1String("data")).toObject();
+    const auto mappings = QJsonDocument(data.value(QLatin1String("mappings")).toArray()).toJson(QJsonDocument::Compact);
+    return QCryptographicHash::hash(mappings, QCryptographicHash::Sha256).toHex();
+}
+
+void logPolicyMappingsJson(const QString &source, AccountState *accountState, const QJsonDocument &doc)
+{
+    const auto accountName = accountState && accountState->account()
+        ? accountState->account()->displayName()
+        : QStringLiteral("unknown account");
+    const auto compactJson = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+    qCInfo(lcDriveMappingManager).noquote()
+        << QStringLiteral("Incoming policy drive mapping JSON from %1 for %2: %3")
+               .arg(source, accountName, compactJson);
+
+    Logger::instance()->logToFile(QStringLiteral("drive-mapping-policies.log"),
+        QStringLiteral("source=%1 account=%2 json=%3").arg(source, accountName, compactJson));
+}
+
+// Helper to log resolution/mapping details to file
+void logPolicyDiagnostic(AccountState *accountState, const QString &message)
+{
+    if (!accountState)
+        return;
+
+    Logger::instance()->logToFile(QStringLiteral("drive-mapping-policies.log"), message);
 }
 
 // Returns the raw device string QueryDosDevice reports for a drive letter, or an empty string.
@@ -55,6 +180,46 @@ DriveMappingManager::DriveMappingManager(FolderMan *folderMan)
     : QObject(folderMan)
     , _folderMan(folderMan)
 {
+    qCInfo(lcDriveMappingManager) << "Drive mapping manager constructed";
+
+    const auto refreshPolicyAccounts = [this](const QString &reason) {
+        const auto accounts = AccountManager::instance()->accounts();
+        qCInfo(lcDriveMappingManager) << "Refreshing policy drive mappings" << reason << "accountCount" << accounts.size();
+        for (const auto &account : accounts) {
+            registerPolicyAccount(account.data());
+            applyCachedPolicyMappings(account.data());
+            fetchPolicyMappings(account.data());
+        }
+    };
+
+    QTimer::singleShot(0, this, [refreshPolicyAccounts] {
+        refreshPolicyAccounts(QStringLiteral("startup"));
+    });
+
+    connect(AccountManager::instance(), &AccountManager::accountAdded, this, [this](AccountState *accountState) {
+        qCInfo(lcDriveMappingManager) << "Policy drive mapping account added" << (accountState && accountState->account() ? accountState->account()->displayName() : QStringLiteral("unknown account"));
+        registerPolicyAccount(accountState);
+        applyCachedPolicyMappings(accountState);
+        fetchPolicyMappings(accountState);
+    });
+
+    connect(_folderMan, &FolderMan::folderListChanged, this, [this, refreshPolicyAccounts] {
+        QTimer::singleShot(0, this, [refreshPolicyAccounts] {
+            refreshPolicyAccounts(QStringLiteral("folderListChanged"));
+        });
+    });
+
+    // Fallback for missed/undelivered push events (e.g. notify_push unavailable or the
+    // websocket dropped): periodically re-check with the server, same as other pollable state.
+    _policyRefreshTimer.setInterval(ConfigFile().remotePollInterval());
+    connect(&_policyRefreshTimer, &QTimer::timeout, this, [this] {
+        const auto accounts = AccountManager::instance()->accounts();
+        for (const auto &account : accounts) {
+            if (account->isConnected())
+                fetchPolicyMappings(account.data());
+        }
+    });
+    _policyRefreshTimer.start();
 }
 
 QVector<QChar> DriveMappingManager::availableDriveLetters()
@@ -120,36 +285,532 @@ bool DriveMappingManager::mapFolder(Folder *folder, QChar letter)
     return mapPath(folder->path(), letter, folder->alias());
 }
 
-bool DriveMappingManager::mapPath(const QString &localPath, QChar letter, const QString &folderAlias)
+bool DriveMappingManager::mapPath(const QString &localPath, QChar letter, const QString &folderAlias, bool adoptExistingMapping)
 {
-    if (letter.isNull())
+    if (letter.isNull()) {
+        qCWarning(lcDriveMappingManager) << "mapPath called with null letter for" << folderAlias;
         return false;
+    }
 
     letter = letter.toUpper();
     const auto path = canonicalPath(localPath);
 
+    qCInfo(lcDriveMappingManager) << "mapPath: Attempting to map" << driveSpec(letter) << "to" << path 
+                                  << "for" << folderAlias << "adoptExisting=" << adoptExistingMapping;
+
     // Already correctly mapped, whether by us in this session or from before: nothing to do.
     if (substitutionTargets(letter, path)) {
+        qCInfo(lcDriveMappingManager) << "mapPath: Drive" << letter << "already correctly targets" << path;
+        if (!adoptExistingMapping) {
+            qCWarning(lcDriveMappingManager) << "mapPath: Refusing to adopt existing mapping for" << letter << "(not created by policy)";
+            emit mappingFailed(folderAlias, tr("Drive letter %1 is already mapped outside administrator policy.").arg(driveSpec(letter)));
+            return false;
+        }
         _ownedMappings.insert(letter, path);
+        qCInfo(lcDriveMappingManager) << "mapPath: Adopted existing mapping for" << letter;
         return true;
     }
 
     if (letterInUse(letter)) {
-        qCWarning(lcDriveMappingManager) << "Drive letter" << letter << "is already in use, refusing to overwrite it";
+        qCWarning(lcDriveMappingManager) << "mapPath: Drive letter" << letter << "is already in use (system reports)";
         emit mappingFailed(folderAlias, tr("Drive letter %1 is already in use by something else.").arg(driveSpec(letter)));
         return false;
     }
 
     QString error;
     if (!createSubstitution(letter, path, &error)) {
-        qCWarning(lcDriveMappingManager) << "Failed to map" << letter << "to" << path << ":" << error;
+        qCWarning(lcDriveMappingManager) << "mapPath: Failed to create substitution for" << letter << ":" << error;
         emit mappingFailed(folderAlias, error);
         return false;
     }
 
     _ownedMappings.insert(letter, path);
+    qCInfo(lcDriveMappingManager) << "mapPath: Successfully created mapping" << driveSpec(letter) << "to" << path;
     emit mappingsChanged();
     return true;
+}
+
+QString DriveMappingManager::policyKey(const QString &folderId, QChar letter)
+{
+    return mappingKeyForPolicy(folderId, letter);
+}
+
+void DriveMappingManager::registerPolicyAccount(AccountState *accountState)
+{
+    if (!accountState || _registeredPolicyAccounts.contains(accountState))
+        return;
+
+    _registeredPolicyAccounts.insert(accountState);
+    connect(accountState, &QObject::destroyed, this, [this, accountState] {
+        _registeredPolicyAccounts.remove(accountState);
+        _pushConnectedAccounts.remove(accountState);
+        _policyJobs.remove(accountState);
+        _policyRefreshState.remove(accountState);
+    });
+    connect(accountState, &AccountState::isConnectedChanged, this, [this, accountState] {
+        if (accountState->isConnected())
+            fetchPolicyMappings(accountState);
+        else
+            applyCachedPolicyMappings(accountState);
+    });
+
+    // Refetch as soon as push notifications are (re-)established, instead of waiting on the timer.
+    connect(accountState->account().data(), &Account::pushNotificationsReady, this, [this, accountState] {
+        connectPushNotificationsForAccount(accountState);
+    });
+    connectPushNotificationsForAccount(accountState);
+}
+
+void DriveMappingManager::connectPushNotificationsForAccount(AccountState *accountState)
+{
+    if (!accountState || !accountState->account() || _pushConnectedAccounts.contains(accountState))
+        return;
+
+    auto *pushNotifications = accountState->account()->pushNotifications();
+    if (!pushNotifications || !pushNotifications->isReady())
+        return;
+
+    _pushConnectedAccounts.insert(accountState);
+
+    // The drive_mapping_policies app pushes a "drive_mapping_policy_changed" notify_custom
+    // event whose JSON body is just {"version":N,"reason":"policy_changed"}. It is an
+    // invalidation signal only; the effective mappings are never taken from the event body
+    // and must always be re-fetched from the REST endpoint.
+    connect(pushNotifications, &PushNotifications::customMessageReceived, this,
+        [this, accountState](Account *, const QString &messageType, const QByteArray &body) {
+            if (messageType != QLatin1String("drive_mapping_policy_changed"))
+                return;
+
+            qCInfo(lcDriveMappingManager) << "Push notification received for"
+                                          << accountState->account()->displayName();
+            handlePolicyChangedEvent(accountState, body);
+        });
+}
+
+DriveMappingManager::PolicyRefreshState &DriveMappingManager::policyRefreshState(AccountState *accountState)
+{
+    auto it = _policyRefreshState.find(accountState);
+    if (it == _policyRefreshState.end()) {
+        PolicyRefreshState state;
+        if (accountState) {
+            auto settings = accountState->settings();
+            settings->beginGroup(QLatin1String(policyCacheGroupC));
+            state.localVersion = settings->value(QLatin1String(versionKeyC), 0).toLongLong();
+            const auto cachedJson = settings->value(QLatin1String(jsonKeyC)).toString();
+            settings->endGroup();
+
+            if (!cachedJson.isEmpty()) {
+                const auto cachedDoc = QJsonDocument::fromJson(cachedJson.toUtf8());
+                if (!cachedDoc.isNull())
+                    state.appliedDigest = policyMappingsDigest(cachedDoc);
+            }
+        }
+        it = _policyRefreshState.insert(accountState, state);
+    }
+    return *it;
+}
+
+void DriveMappingManager::handlePolicyChangedEvent(AccountState *accountState, const QByteArray &body)
+{
+    if (!accountState)
+        return;
+
+    QJsonParseError parseError;
+    const auto doc = QJsonDocument::fromJson(body, &parseError);
+    const auto versionValue = doc.object().value(QLatin1String("version"));
+    if (parseError.error != QJsonParseError::NoError || !doc.isObject() || !versionValue.isDouble()) {
+        qCWarning(lcDriveMappingManager) << "Ignoring malformed drive_mapping_policy_changed event body for"
+                                         << accountState->account()->displayName() << ":" << parseError.errorString();
+        return;
+    }
+
+    const auto eventVersion = static_cast<qint64>(versionValue.toDouble());
+    auto &state = policyRefreshState(accountState);
+    if (eventVersion <= state.localVersion) {
+        qCInfo(lcDriveMappingManager) << "Ignoring stale/duplicate drive_mapping_policy_changed event, version"
+                                      << eventVersion << "<= applied version" << state.localVersion;
+        return;
+    }
+
+    state.pendingVersion = std::max(state.pendingVersion, eventVersion);
+    qCInfo(lcDriveMappingManager) << "Policy drive mapping change signalled for" << accountState->account()->displayName()
+                                  << "version" << eventVersion << "; refreshing mappings";
+    triggerPolicyRefresh(accountState);
+}
+
+void DriveMappingManager::triggerPolicyRefresh(AccountState *accountState)
+{
+    if (!accountState || _policyJobs.value(accountState))
+        return; // A fetch is already in flight; it will pick up the pending version once it completes.
+
+    fetchPolicyMappings(accountState);
+}
+
+void DriveMappingManager::fetchPolicyMappings(AccountState *accountState)
+{
+    if (!accountState || !accountState->isConnected() || _policyJobs.value(accountState)) {
+        qCInfo(lcDriveMappingManager) << "Skipping policy drive mapping fetch"
+                                      << "hasAccountState" << static_cast<bool>(accountState)
+                                      << "isConnected" << (accountState ? accountState->isConnected() : false)
+                                      << "hasRunningJob" << static_cast<bool>(accountState ? _policyJobs.value(accountState) : nullptr);
+        return;
+    }
+
+    if (useMockPolicyMappingsC) {
+        const auto availableLetters = availableDriveLetters();
+        if (availableLetters.isEmpty()) {
+            qCWarning(lcDriveMappingManager) << "Mock policy drive mapping skipped because no drive letters are available for" << accountState->account()->displayName();
+            return;
+        }
+/*
+        const auto mockLetter = availableLetters.contains(QChar(QLatin1Char('G')))
+            ? QChar(QLatin1Char('G'))
+            : availableLetters.constFirst();
+*/
+        const auto mockLetter = QLatin1Char('Z');
+        const auto mockJson = QString::fromLatin1(R"({
+            "ocs": {
+                "data": {
+                    "version": 42,
+                    "mappings": [
+                        {
+                            "drive_letter": "%1",
+                            "folder_id": 12345,
+                            "folder_path": "/ZZ",
+                            "relative_path_hint": "ZZ",
+                            "enforcement": "enforced"
+                        }
+                    ]
+                }
+            }
+        })").arg(QString(mockLetter));
+
+        QJsonParseError parseError;
+        const auto doc = QJsonDocument::fromJson(mockJson.toUtf8(), &parseError);
+        if (parseError.error != QJsonParseError::NoError || doc.isNull()) {
+            qCWarning(lcDriveMappingManager) << "Mock policy drive mapping JSON is invalid:" << parseError.errorString();
+            return;
+        }
+        logPolicyMappingsJson(QStringLiteral("mock"), accountState, doc);
+
+        auto settings = accountState->settings();
+        settings->beginGroup(QLatin1String(policyCacheGroupC));
+        settings->setValue(QLatin1String(jsonKeyC), QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
+        settings->endGroup();
+
+        qCInfo(lcDriveMappingManager) << "Using mock policy drive mappings for" << accountState->account()->displayName() << "letter" << mockLetter;
+        applyPolicyMappings(accountState, parsePolicyMappings(doc), QStringLiteral("mock"));
+        return;
+    }
+
+    const QPointer<AccountState> guardedAccountState(accountState);
+
+    qCInfo(lcDriveMappingManager) << "Fetching policy drive mappings for" << accountState->account()->displayName();
+    auto *job = new JsonApiJob(accountState->account(), QLatin1String(endpointPathC), this);
+    _policyJobs.insert(accountState, job);
+    connect(job, &JsonApiJob::jsonReceived, this, [this, guardedAccountState, job](const QJsonDocument &doc, int statusCode) {
+        _policyJobs.remove(guardedAccountState.data());
+        if (!guardedAccountState) {
+            job->deleteLater();
+            return;
+        }
+
+        auto *accountState = guardedAccountState.data();
+
+        if ((statusCode != 100 && statusCode != 200) || doc.isNull()) {
+            qCWarning(lcDriveMappingManager) << "Policy drive mapping retrieval failed for" << accountState->account()->displayName() << "status" << statusCode;
+            applyCachedPolicyMappings(accountState);
+            job->deleteLater();
+            return;
+        }
+        logPolicyMappingsJson(QStringLiteral("server"), accountState, doc);
+
+        const auto responseVersion = parsePolicyVersion(doc);
+        const auto responseDigest = policyMappingsDigest(doc);
+        auto &state = policyRefreshState(accountState);
+        // A server that omits a version bump on a policy change would otherwise strand the
+        // new mappings forever, so the mapping content itself is also compared.
+        const auto contentChanged = responseDigest != state.appliedDigest;
+        if (responseVersion > state.localVersion || contentChanged) {
+            auto settings = accountState->settings();
+            settings->beginGroup(QLatin1String(policyCacheGroupC));
+            settings->setValue(QLatin1String(jsonKeyC), QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
+            settings->setValue(QLatin1String(versionKeyC), responseVersion);
+            settings->endGroup();
+
+            if (contentChanged && responseVersion <= state.localVersion) {
+                qCWarning(lcDriveMappingManager) << "Policy drive mappings for" << accountState->account()->displayName()
+                                                 << "changed without a version bump (still" << responseVersion
+                                                 << "); applying based on content change";
+            }
+
+            qCInfo(lcDriveMappingManager) << "Policy drive mapping retrieval succeeded for" << accountState->account()->displayName() << "version" << responseVersion;
+            applyPolicyMappings(accountState, parsePolicyMappings(doc), QStringLiteral("server"));
+            state.localVersion = std::max(state.localVersion, responseVersion);
+            state.appliedDigest = responseDigest;
+        } else {
+            qCInfo(lcDriveMappingManager) << "Policy drive mapping response version" << responseVersion
+                                          << "for" << accountState->account()->displayName()
+                                          << "is not newer than applied version" << state.localVersion
+                                          << "and mappings are unchanged; skipping reapply";
+        }
+
+        const auto hasNewerPending = state.pendingVersion > state.localVersion;
+        if (!hasNewerPending)
+            state.pendingVersion = -1;
+
+        job->deleteLater();
+
+        if (hasNewerPending)
+            triggerPolicyRefresh(accountState);
+    });
+    job->start();
+}
+
+QVector<DriveMappingManager::PolicyMapping> DriveMappingManager::cachedPolicyMappings(AccountState *accountState) const
+{
+    QVector<PolicyMapping> result;
+    if (!accountState)
+        return result;
+
+    auto settings = accountState->settings();
+    settings->beginGroup(QLatin1String(policyCacheGroupC));
+    const auto json = settings->value(QLatin1String(jsonKeyC)).toString().toUtf8();
+    settings->endGroup();
+    if (json.isEmpty())
+        return result;
+
+    QJsonParseError error;
+    const auto doc = QJsonDocument::fromJson(json, &error);
+    if (error.error != QJsonParseError::NoError || doc.isNull()) {
+        qCWarning(lcDriveMappingManager) << "Cached policy drive mapping JSON is invalid:" << error.errorString();
+        return result;
+    }
+
+    result = parsePolicyMappings(doc);
+    for (auto &mapping : result) {
+        const auto key = policyKey(mapping.folderId, mapping.driveLetter);
+        settings->beginGroup(QLatin1String(policyOwnedMappingsGroupC));
+        settings->beginGroup(key);
+        mapping.suppressed = settings->value(QLatin1String(suppressedKeyC), false).toBool();
+        mapping.localPath = settings->value(QLatin1String(pathKeyC)).toString();
+        settings->endGroup();
+        settings->endGroup();
+    }
+    return result;
+}
+
+QVector<DriveMappingManager::PolicyMapping> DriveMappingManager::policyMappings(AccountState *accountState) const
+{
+    auto mappings = cachedPolicyMappings(accountState);
+    for (auto &mapping : mappings) {
+        const auto resolved = resolvePolicyMapping(accountState, &mapping);
+        Q_UNUSED(resolved)
+    }
+    return mappings;
+}
+
+void DriveMappingManager::applyCachedPolicyMappings(AccountState *accountState)
+{
+    applyPolicyMappings(accountState, cachedPolicyMappings(accountState), QStringLiteral("cache"));
+}
+
+bool DriveMappingManager::resolvePolicyMapping(AccountState *accountState, PolicyMapping *mapping) const
+{
+    if (!accountState || !mapping || mapping->folderId.isEmpty())
+        return false;
+
+    const auto folders = _folderMan->map().values();
+    const auto folderId = mapping->folderId.toUtf8();
+    logPolicyDiagnostic(accountState, QStringLiteral("RESOLVE folderId=%1 hint='%2' path='%3' folderCount=%4")
+        .arg(mapping->folderId, mapping->relativePathHint, mapping->folderPath, QString::number(folders.size())));
+    qCInfo(lcDriveMappingManager) << "Resolving policy mapping: folderId=" << mapping->folderId 
+                                  << "hint=" << mapping->relativePathHint 
+                                  << "folderPath=" << mapping->folderPath
+                                  << "configuredFolderCount=" << folders.size();
+    
+    for (auto *folder : folders) {
+        if (folder->accountState() != accountState)
+            continue;
+
+        qCInfo(lcDriveMappingManager) << "  Checking folder:" << folder->alias() << "at" << folder->path();
+        
+        SyncJournalFileRecord matchedRecord;
+        const auto foundByFileId = folder->journalDb()->getFileRecordsByFileId(folderId, [&matchedRecord](const SyncJournalFileRecord &record) {
+            if (!matchedRecord.isValid() && record.isDirectory())
+                matchedRecord = record;
+        });
+        if (!foundByFileId)
+            qCInfo(lcDriveMappingManager) << "    Could not query sync journal by file id" << mapping->folderId;
+
+        if (!matchedRecord.isValid()) {
+            const auto foundByNumericFileId = folder->journalDb()->getFilesBelowPath(QByteArray(), [&matchedRecord, &folderId](const SyncJournalFileRecord &record) {
+                if (!matchedRecord.isValid() && record.isDirectory() && record.numericFileId() == folderId)
+                    matchedRecord = record;
+            });
+            if (!foundByNumericFileId)
+                qCInfo(lcDriveMappingManager) << "    Could not query sync journal by numeric file id" << mapping->folderId;
+        }
+
+        if (matchedRecord.isValid()) {
+            mapping->localPath = canonicalPath(QDir(folder->path()).filePath(matchedRecord.path()));
+            mapping->resolved = true;
+            mapping->status = tr("Resolved from folder id %1.").arg(mapping->folderId);
+            logPolicyDiagnostic(accountState, QStringLiteral("  -> RESOLVED BY ID to '%1'").arg(mapping->localPath));
+            qCInfo(lcDriveMappingManager) << "  Resolved from folder ID to" << mapping->localPath;
+            return true;
+        }
+    }
+
+    logPolicyDiagnostic(accountState, QStringLiteral("  -> ID resolution failed, trying hint '%1'").arg(mapping->relativePathHint));
+    qCInfo(lcDriveMappingManager) << "  File ID resolution failed, trying relative path hint:" << mapping->relativePathHint;
+    
+    QString firstMissingHintPath;
+    auto hintExcluded = false;
+    for (auto *folder : folders) {
+        if (folder->accountState() != accountState)
+            continue;
+
+        // Try the full remote folder path first (correctly locates folders nested under
+        // parent directories that aren't part of the relative_path_hint), then fall back
+        // to the flat hint-only path for backwards compatibility.
+        QVector<QString> candidatePaths;
+        const auto folderPathCandidate = folderPathToLocalPath(folder, mapping->folderPath);
+        if (!folderPathCandidate.isEmpty())
+            candidatePaths.append(folderPathCandidate);
+        const auto hintedPath = relativeHintToLocalPath(folder, mapping->relativePathHint);
+        if (!hintedPath.isEmpty() && !candidatePaths.contains(hintedPath))
+            candidatePaths.append(hintedPath);
+
+        if (candidatePaths.isEmpty()) {
+            qCInfo(lcDriveMappingManager) << "    Folder" << folder->alias() << "produced empty hint path";
+            continue;
+        }
+
+        for (const auto &candidatePath : candidatePaths) {
+            logPolicyDiagnostic(accountState, QStringLiteral("  Checking hint path '%1'").arg(candidatePath));
+            qCInfo(lcDriveMappingManager) << "    Checking hint path:" << candidatePath;
+            mapping->localPath = candidatePath;
+            if (QDir(candidatePath).exists()) {
+                mapping->resolved = true;
+                mapping->status = tr("Resolved from relative path hint %1.").arg(mapping->relativePathHint);
+                logPolicyDiagnostic(accountState, QStringLiteral("  -> RESOLVED BY HINT to '%1'").arg(mapping->localPath));
+                qCInfo(lcDriveMappingManager) << "  Resolved from hint to" << mapping->localPath;
+                return true;
+            }
+
+            logPolicyDiagnostic(accountState, QStringLiteral("    Path does not exist locally"));
+            qCInfo(lcDriveMappingManager) << "      Path does not exist locally";
+            if (firstMissingHintPath.isEmpty())
+                firstMissingHintPath = candidatePath;
+        }
+
+        bool selectiveSyncListRead = false;
+        const auto selectiveSyncBlackList = folder->journalDb()->getSelectiveSyncList(SyncJournalDb::SelectiveSyncBlackList, &selectiveSyncListRead);
+        if (selectiveSyncListRead && SyncJournalDb::findPathInSelectiveSyncList(selectiveSyncBlackList, normalizedRelativeHint(mapping->relativePathHint))) {
+            logPolicyDiagnostic(accountState, QStringLiteral("    (Path is in selective-sync blacklist)"));
+            qCInfo(lcDriveMappingManager) << "      Path is in selective-sync blacklist";
+            hintExcluded = true;
+        }
+    }
+
+    if (!firstMissingHintPath.isEmpty()) {
+        mapping->localPath = firstMissingHintPath;
+        mapping->status = hintExcluded
+            ? tr("The policy target %1 is excluded from synchronization.").arg(mapping->folderPath)
+            : tr("The policy target %1 is not present locally at %2.").arg(mapping->folderPath, QDir::toNativeSeparators(firstMissingHintPath));
+        logPolicyDiagnostic(accountState, QStringLiteral("  -> RESOLUTION FAILED: %1").arg(mapping->status));
+        qCWarning(lcDriveMappingManager) << "  Resolution failed:" << mapping->status;
+        return false;
+    }
+
+    mapping->status = tr("No configured folder can resolve policy target %1.").arg(mapping->folderPath);
+    logPolicyDiagnostic(accountState, QStringLiteral("  -> NO FOLDERS CONFIGURED"));
+    qCWarning(lcDriveMappingManager) << "  No configured folders found for account";
+    return false;
+}
+
+void DriveMappingManager::applyPolicyMappings(AccountState *accountState, QVector<PolicyMapping> mappings, const QString &source)
+{
+    if (!accountState)
+        return;
+
+    logPolicyDiagnostic(accountState, QStringLiteral("APPLY %1 mappings from %2 source")
+        .arg(QString::number(mappings.size()), source));
+
+    QSet<QString> currentKeys;
+    auto settings = accountState->settings();
+    settings->beginGroup(QLatin1String(policyOwnedMappingsGroupC));
+
+    for (auto &mapping : mappings) {
+        const auto key = policyKey(mapping.folderId, mapping.driveLetter);
+        currentKeys.insert(key);
+        settings->beginGroup(key);
+        const auto previousPath = settings->value(QLatin1String(pathKeyC)).toString();
+        const auto suppressed = settings->value(QLatin1String(suppressedKeyC), false).toBool();
+        settings->endGroup();
+
+        const auto enforcement = mapping.enforcement.isEmpty() ? QString::fromLatin1(suggestedC) : mapping.enforcement;
+        if (suppressed && enforcement != QLatin1String(enforcedC)) {
+            logPolicyDiagnostic(accountState, QStringLiteral("  %1 SKIPPED (suggested policy suppressed by user)").arg(mapping.driveLetter));
+            qCInfo(lcDriveMappingManager) << "Skipping suppressed suggested policy drive mapping" << mapping.driveLetter << mapping.folderId;
+            continue;
+        }
+
+        if (!resolvePolicyMapping(accountState, &mapping)) {
+            logPolicyDiagnostic(accountState, QStringLiteral("  %1 RESOLVE_FAILED: %2").arg(mapping.driveLetter, mapping.status));
+            qCWarning(lcDriveMappingManager) << "Policy drive mapping" << mapping.driveLetter << mapping.folderId << "not applied (resolution failed):" << mapping.status;
+            continue;
+        }
+
+        qCInfo(lcDriveMappingManager) << "Policy mapping" << mapping.driveLetter << "resolved to:" << mapping.localPath;
+        logPolicyDiagnostic(accountState, QStringLiteral("  %1 resolved to '%2'").arg(mapping.driveLetter, mapping.localPath));
+
+        // Policy always takes priority: suggested and enforced mappings are both applied unconditionally.
+        qCInfo(lcDriveMappingManager) << "Applying" << enforcement << "policy drive mapping" << mapping.driveLetter << mapping.folderId << "from" << source << "to" << mapping.localPath;
+        logPolicyDiagnostic(accountState, QStringLiteral("  %1 MAPPING to '%2' (adoptExisting=%3)").arg(mapping.driveLetter, mapping.localPath, QString::number(!previousPath.isEmpty())));
+        
+        const auto mapResult = mapPath(mapping.localPath, mapping.driveLetter, mapping.folderPath, !previousPath.isEmpty());
+        if (!mapResult) {
+            logPolicyDiagnostic(accountState, QStringLiteral("  %1 MAP_FAILED").arg(mapping.driveLetter));
+            qCWarning(lcDriveMappingManager) << "Policy drive mapping" << mapping.driveLetter << "FAILED to map (mapPath returned false)";
+            continue;
+        }
+        logPolicyDiagnostic(accountState, QStringLiteral("  %1 MAP_SUCCESS").arg(mapping.driveLetter));
+        qCInfo(lcDriveMappingManager) << "Policy drive mapping" << mapping.driveLetter << "successfully applied!";
+
+        settings->beginGroup(key);
+        settings->setValue(QLatin1String(folderIdKeyC), mapping.folderId);
+        settings->setValue(QLatin1String(folderPathKeyC), mapping.folderPath);
+        settings->setValue(QLatin1String(relativePathHintKeyC), mapping.relativePathHint);
+        settings->setValue(QLatin1String(pathKeyC), mapping.localPath);
+        settings->setValue(QLatin1String(driveLetterKeyC), QString(mapping.driveLetter));
+        settings->setValue(QLatin1String(enforcementKeyC), enforcement);
+        settings->setValue(QLatin1String(suppressedKeyC), false);
+        settings->endGroup();
+    }
+
+    const auto ownedGroups = settings->childGroups();
+    for (const auto &ownedGroup : ownedGroups) {
+        if (currentKeys.contains(ownedGroup))
+            continue;
+
+        settings->beginGroup(ownedGroup);
+        const auto oldPath = settings->value(QLatin1String(pathKeyC)).toString();
+        const auto oldLetterString = settings->value(QLatin1String(driveLetterKeyC)).toString();
+        settings->endGroup();
+        const auto oldLetter = oldLetterString.isEmpty() ? QChar() : oldLetterString.at(0).toUpper();
+        if (!oldLetter.isNull() && !oldPath.isEmpty() && substitutionTargets(oldLetter, oldPath)) {
+            logPolicyDiagnostic(accountState, QStringLiteral("  REMOVING obsolete mapping %1").arg(oldLetter));
+            qCInfo(lcDriveMappingManager) << "Removing obsolete policy drive mapping" << oldLetter << oldPath;
+            _ownedMappings.insert(oldLetter, canonicalPath(oldPath));
+            unmapLetter(oldLetter);
+        }
+        settings->remove(ownedGroup);
+    }
+
+    settings->endGroup();
+    emit mappingsChanged();
 }
 
 bool DriveMappingManager::unmapLetter(QChar letter)
@@ -287,18 +948,54 @@ bool DriveMappingManager::setManualMappingDriveLetter(AccountState *accountState
     return true;
 }
 
+bool DriveMappingManager::removeSuggestedPolicyMapping(AccountState *accountState, const QString &folderId, QChar letter)
+{
+    if (!accountState || folderId.isEmpty() || letter.isNull())
+        return false;
+
+    letter = letter.toUpper();
+    const auto key = policyKey(folderId, letter);
+    auto settings = accountState->settings();
+    settings->beginGroup(QLatin1String(policyOwnedMappingsGroupC));
+    settings->beginGroup(key);
+    const auto enforcement = settings->value(QLatin1String(enforcementKeyC), QLatin1String(suggestedC)).toString();
+    const auto localPath = settings->value(QLatin1String(pathKeyC)).toString();
+    if (enforcement == QLatin1String(enforcedC)) {
+        settings->endGroup();
+        settings->endGroup();
+        emit mappingFailed(QString(), tr("This drive mapping is enforced by administrator policy and cannot be removed from the client."));
+        return false;
+    }
+
+    settings->setValue(QLatin1String(suppressedKeyC), true);
+    settings->endGroup();
+    settings->endGroup();
+
+    if (!localPath.isEmpty() && substitutionTargets(letter, localPath)) {
+        _ownedMappings.insert(letter, canonicalPath(localPath));
+        unmapLetter(letter);
+    }
+    emit mappingsChanged();
+    return true;
+}
+
 void DriveMappingManager::applyAllMappings()
 {
-    if (!_folderMan)
+    if (!_folderMan) {
+        qCInfo(lcDriveMappingManager) << "Skipping all drive mappings because FolderMan is not available";
         return;
+    }
 
+    const auto accounts = AccountManager::instance()->accounts();
     const auto folders = _folderMan->map();
+    qCInfo(lcDriveMappingManager) << "Applying all drive mappings"
+                                  << "accountCount" << accounts.size()
+                                  << "folderCount" << folders.size();
     for (auto *folder : folders) {
         if (!folder->driveLetter().isNull())
             mapFolder(folder, folder->driveLetter());
     }
 
-    const auto accounts = AccountManager::instance()->accounts();
     for (const auto &account : accounts) {
         const auto mappings = manualMappings(account.data());
         for (const auto &mapping : mappings) {
@@ -306,6 +1003,26 @@ void DriveMappingManager::applyAllMappings()
                 mapPath(mapping.localPath, mapping.driveLetter);
         }
     }
+
+    for (const auto &account : accounts) {
+        registerPolicyAccount(account.data());
+        applyCachedPolicyMappings(account.data());
+        fetchPolicyMappings(account.data());
+    }
+}
+
+void DriveMappingManager::refreshPolicyMappings(AccountState *accountState)
+{
+    if (accountState) {
+        qCInfo(lcDriveMappingManager) << "Forcing policy drive mapping refresh for" << (accountState->account() ? accountState->account()->displayName() : QStringLiteral("unknown account"));
+        fetchPolicyMappings(accountState);
+        return;
+    }
+
+    const auto accounts = AccountManager::instance()->accounts();
+    qCInfo(lcDriveMappingManager) << "Forcing policy drive mapping refresh for all accounts" << "accountCount" << accounts.size();
+    for (const auto &account : accounts)
+        fetchPolicyMappings(account.data());
 }
 
 } // namespace OCC

@@ -17,6 +17,7 @@ AbstractButton {
 
     signal showUserStatusSelector(int id)
     signal showUserStatusMessageSelector(int id)
+    signal showAccountActions(int id, bool connected, bool hasUserStatus, bool canLogout, string removeAccountText)
 
 
     Accessible.role: Accessible.MenuItem
@@ -151,9 +152,18 @@ AbstractButton {
 
             Accessible.role: Accessible.ButtonMenu
             Accessible.name: qsTr("Account actions")
-            Accessible.onPressAction: userMoreButtonMouseArea.clicked()
+            Accessible.onPressAction: userMoreButton.showActions()
 
-            onClicked: userMoreButtonMenu.visible ? userMoreButtonMenu.close() : userMoreButtonMenu.popup()
+            function showActions() {
+                userLine.showAccountActions(index, model.isConnected, model.serverHasUserStatus, model.canLogout, model.removeAccountText)
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.LeftButton
+                preventStealing: true
+                onClicked: userMoreButton.showActions()
+            }
 
             property var iconColor: !userLine.parent.enabled
                 ? userLine.parent.palette.mid
@@ -162,76 +172,6 @@ AbstractButton {
                     : userLine.parent.palette.text)
             icon.source: "image://svgimage-custom-color/more.svg/" + iconColor
 
-            AutoSizingMenu {
-                id: userMoreButtonMenu
-                closePolicy: Menu.CloseOnPressOutsideParent | Menu.CloseOnEscape
-                height: implicitHeight
-
-                MenuItem {
-                    id: setStatusButton
-                    enabled: model.isConnected && model.serverHasUserStatus
-                    text: qsTr("Set status")
-                    font.pixelSize: Style.topLinePixelSize
-                    hoverEnabled: true
-
-                    onClicked: showUserStatusSelector(index)
-
-                    Accessible.role: Accessible.Button
-                    Accessible.name: text
-                    Accessible.onPressAction: setStatusButton.clicked()
-               }
-
-                MenuItem {
-                    id: statusMessageButton
-                    enabled: model.isConnected && model.serverHasUserStatus
-                    text: qsTr("Status message")
-                    font.pixelSize: Style.topLinePixelSize
-                    hoverEnabled: true
-
-                    onClicked: showUserStatusMessageSelector(index)
-
-                    Accessible.role: Accessible.Button
-                    Accessible.name: text
-                    Accessible.onPressAction: statusMessageButton.clicked()
-               }
-
-                MenuItem {
-                    id: logInOutButton
-                    enabled: model.canLogout
-                    text: model.isConnected ? qsTr("Log out") : qsTr("Log in")
-                    width: parent.width
-                    font.pixelSize: Style.topLinePixelSize
-                    hoverEnabled: true
-
-                    onClicked: {
-                        if (model.isConnected) {
-                            UserModel.logout(index)
-                        } else {
-                            UserModel.login(index)
-                        }
-                        accountMenu.close()
-                    }
-
-                    Accessible.role: Accessible.Button
-                    Accessible.name: text
-                    Accessible.onPressAction: logInOutButton.clicked()
-               }
-
-                MenuItem {
-                    id: removeAccountButton
-                    text: model.removeAccountText
-                    font.pixelSize: Style.topLinePixelSize
-                    hoverEnabled: true
-                    onClicked: {
-                        UserModel.removeAccount(index)
-                        accountMenu.close()
-                    }
-
-                    Accessible.role: Accessible.Button
-                    Accessible.name: text
-                    Accessible.onPressAction: removeAccountButton.clicked()
-               }
-            }
         }
     }
 }   // MenuItem userLine

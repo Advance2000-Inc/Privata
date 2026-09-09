@@ -182,7 +182,6 @@ void Systray::setupContextMenu()
     auto pauseAction = _contextMenu->addAction(tr("Pause sync"), this, &Systray::slotPauseAllFolders);
     auto resumeAction = _contextMenu->addAction(tr("Resume sync"), this, &Systray::slotUnpauseAllFolders);
     _contextMenu->addAction(tr("Settings"), this, &Systray::openSettings);
-    _contextMenu->addAction(tr("Help"), this, &Systray::openHelp);
     _contextMenu->addAction(tr("Exit %1").arg(Theme::instance()->appNameGUI()), this, &Systray::shutdown);
 
     connect(_contextMenu, &QMenu::aboutToShow, [=] {
