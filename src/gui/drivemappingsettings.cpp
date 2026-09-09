@@ -210,14 +210,12 @@ void DriveMappingSettings::buildPolicyRow(const DriveMappingManager::PolicyMappi
     const auto enforcement = mapping.enforcement.isEmpty() ? tr("suggested") : mapping.enforcement;
     _table->setItem(row, 2, new QTableWidgetItem(tr("Company managed policy (%1)").arg(enforcement)));
 
-    auto *combo = new QComboBox(this);
-    combo->addItem(mapping.driveLetter.isNull() ? tr("No drive") : QStringLiteral("%1:").arg(mapping.driveLetter), QVariant::fromValue(mapping.driveLetter));
-    combo->setCurrentIndex(0);
-    combo->setEnabled(false);
-    combo->setToolTip(mapping.enforcement == QLatin1String(enforcedC)
+    auto *driveLabel = new QLabel(mapping.driveLetter.isNull() ? tr("No drive") : QStringLiteral("%1:").arg(mapping.driveLetter), this);
+    driveLabel->setContentsMargins(8, 0, 0, 0);
+    driveLabel->setToolTip(mapping.enforcement == QLatin1String(enforcedC)
             ? tr("This drive mapping is enforced by administrator policy.")
             : tr("This drive mapping was suggested by administrator policy."));
-    _table->setCellWidget(row, 3, combo);
+    _table->setCellWidget(row, 3, driveLabel);
 }
 
 void DriveMappingSettings::slotLetterChanged(Folder *folder, QChar letter)
