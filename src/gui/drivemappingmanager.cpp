@@ -19,6 +19,7 @@
 #include <QLoggingCategory>
 #include <QSettings>
 #include <QByteArray>
+#include <QCryptographicHash>
 
 #include <windows.h>
 
@@ -129,6 +130,15 @@ qint64 parsePolicyVersion(const QJsonDocument &doc)
 {
     const auto data = doc.object().value(QLatin1String("ocs")).toObject().value(QLatin1String("data")).toObject();
     return static_cast<qint64>(data.value(QLatin1String("version")).toDouble());
+}
+
+// Digest of the effective mapping list alone, deliberately excluding the version, so a
+// content change that the server forgot to accompany with a version bump is still detected.
+QByteArray policyMappingsDigest(const QJsonDocument &doc)
+{
+    const auto data = doc.object().value(QLatin1String("ocs")).toObject().value(QLatin1String("data")).toObject();
+    const auto mappings = QJsonDocument(data.value(QLatin1String("mappings")).toArray()).toJson(QJsonDocument::Compact);
+    return QCryptographicHash::hash(mappings, QCryptographicHash::Sha256).toHex();
 }
 
 void logPolicyMappingsJson(const QString &source, AccountState *accountState, const QJsonDocument &doc)
@@ -386,7 +396,14 @@ DriveMappingManager::PolicyRefreshState &DriveMappingManager::policyRefreshState
             auto settings = accountState->settings();
             settings->beginGroup(QLatin1String(policyCacheGroupC));
             state.localVersion = settings->value(QLatin1String(versionKeyC), 0).toLongLong();
+            const auto cachedJson = settings->value(QLatin1String(jsonKeyC)).toString();
             settings->endGroup();
+
+            if (!cachedJson.isEmpty()) {
+                const auto cachedDoc = QJsonDocument::fromJson(cachedJson.toUtf8());
+                if (!cachedDoc.isNull())
+                    state.appliedDigest = policyMappingsDigest(cachedDoc);
+            }
         }
         it = _policyRefreshState.insert(accountState, state);
     }
@@ -509,21 +526,33 @@ void DriveMappingManager::fetchPolicyMappings(AccountState *accountState)
         logPolicyMappingsJson(QStringLiteral("server"), accountState, doc);
 
         const auto responseVersion = parsePolicyVersion(doc);
+        const auto responseDigest = policyMappingsDigest(doc);
         auto &state = policyRefreshState(accountState);
-        if (responseVersion > state.localVersion) {
+        // A server that omits a version bump on a policy change would otherwise strand the
+        // new mappings forever, so the mapping content itself is also compared.
+        const auto contentChanged = responseDigest != state.appliedDigest;
+        if (responseVersion > state.localVersion || contentChanged) {
             auto settings = accountState->settings();
             settings->beginGroup(QLatin1String(policyCacheGroupC));
             settings->setValue(QLatin1String(jsonKeyC), QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
             settings->setValue(QLatin1String(versionKeyC), responseVersion);
             settings->endGroup();
 
+            if (contentChanged && responseVersion <= state.localVersion) {
+                qCWarning(lcDriveMappingManager) << "Policy drive mappings for" << accountState->account()->displayName()
+                                                 << "changed without a version bump (still" << responseVersion
+                                                 << "); applying based on content change";
+            }
+
             qCInfo(lcDriveMappingManager) << "Policy drive mapping retrieval succeeded for" << accountState->account()->displayName() << "version" << responseVersion;
             applyPolicyMappings(accountState, parsePolicyMappings(doc), QStringLiteral("server"));
-            state.localVersion = responseVersion;
+            state.localVersion = std::max(state.localVersion, responseVersion);
+            state.appliedDigest = responseDigest;
         } else {
             qCInfo(lcDriveMappingManager) << "Policy drive mapping response version" << responseVersion
                                           << "for" << accountState->account()->displayName()
-                                          << "is not newer than applied version" << state.localVersion << "; skipping reapply";
+                                          << "is not newer than applied version" << state.localVersion
+                                          << "and mappings are unchanged; skipping reapply";
         }
 
         const auto hasNewerPending = state.pendingVersion > state.localVersion;

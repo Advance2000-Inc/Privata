@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QByteArray>
 #include <QChar>
 #include <QHash>
 #include <QObject>
@@ -81,6 +82,8 @@ private:
     {
         qint64 localVersion = 0;
         qint64 pendingVersion = -1;
+        /// Digest of the last applied mapping list, so content changes are caught even when the server fails to bump the version.
+        QByteArray appliedDigest;
     };
 
     void registerPolicyAccount(AccountState *accountState);
